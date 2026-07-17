@@ -1,0 +1,522 @@
+﻿ <!DOCTYPE html>
+ <html lang="zh-CN">
+ <head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+ <title>球场 - 组局者</title>
+ <style>
+   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+   body {
+     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roaoto, "PingFang SC", "Microsoft YaHei", sans-serif;
+     background: #F5F2EC;
+     color: #3D5A2E;
+     padding-bottom: 90px;
+     -webkit-font-smoothing: antialiased;
+   }
+   input, button, select { font-family: inherit; }
+
+   /* === Page Header === */
+   .page-header {
+     padding: 20px 20px 12px;
+     display: flex;
+     align-items: center;
+     justify-content: space-between;
+     position: sticky;
+     top: 0;
+     background: #F5F2EC;
+     z-index: 10;
+   }
+   .page-header h1 {
+     font-size: 28px;
+     font-weight: 700;
+     letter-spacing: -0.5px;
+   }
+   .page-header .count-badge {
+     font-size: 14px;
+     font-weight: 400;
+     color: #7D7D7D;
+   }
+
+   /* === List === */
+   .list-wrap {
+     padding: 0 20px;
+     display: flex;
+     flex-direction: column;
+     gap: 10px;
+   }
+   .empty-state {
+     text-align: center;
+     padding: 80px 20px;
+     color: #7D7D7D;
+   }
+   .empty-state .icon {
+     font-size: 48px;
+     margin-bottom: 12px;
+     opacity: 0.5;
+   }
+   .empty-state p { font-size: 15px; }
+
+   /* === Court Card === */
+   .court-card {
+     background: rgba(255,255,255,0.8);
+     backdrop-filter: blur(10px);
+     -webkit-backdrop-filter: blur(10px);
+     border-radius: 14px;
+     padding: 16px;
+     display: flex;
+     align-items: center;
+     gap: 14px;
+     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+     transition: transform 0.15s, box-shadow 0.15s;
+   }
+   .court-card:hover {
+     transform: translateY(-1px);
+     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+   }
+   .court-icon {
+     width: 44px;
+     height: 44px;
+     border-radius: 12px;
+     background: linear-gradient(135deg, #2ECC71, #8DB5B4);
+     color: white;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     flex-shrink: 0;
+   }
+   .court-icon svg { width: 22px; height: 22px; }
+   .court-info { flex: 1; min-width: 0; }
+   .court-name {
+     font-size: 16px;
+     font-weight: 600;
+   }
+   .court-price {
+     font-size: 14px;
+     color: #7D7D7D;
+     margin-top: 3px;
+   }
+   .court-price strong { color: #3D5A2E; font-weight: 600; }
+   .court-actions {
+     display: flex;
+     gap: 4px;
+     flex-shrink: 0;
+   }
+   .court-actions button {
+     background: none;
+     border: none;
+     cursor: pointer;
+     width: 32px;
+     height: 32px;
+     border-radius: 8px;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     transition: background 0.15s;
+     color: #7D7D7D;
+   }
+   .court-actions .btn-edit:hover { background: rgba(46,204,113,0.1); color: #8DB5B4; }
+   .court-actions .btn-delete:hover { background: rgba(255,71,87,0.1); color: #FF4757; }
+   .court-actions svg { width: 18px; height: 18px; }
+
+   /* === FAB === */
+   .fab {
+     position: fixed;
+     bottom: 110px;
+     right: 24px;
+     width: 52px;
+     height: 52px;
+     border-radius: 50%;
+     background: #8DB5B4;
+     color: white;
+     border: none;
+     cursor: pointer;
+     box-shadow: 0 4px 16px rgba(39,174,96,0.35);
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     transition: transform 0.15s, box-shadow 0.15s;
+     z-index: 50;
+   }
+   .fab:hover {
+     transform: scale(1.05);
+     box-shadow: 0 6px 24px rgba(39,174,96,0.45);
+   }
+   .fab svg { width: 24px; height: 24px; }
+
+   /* === Modal === */
+   .modal-overlay {
+     display: none;
+     position: fixed;
+     inset: 0;
+     background: rgba(0,0,0,0.4);
+     backdrop-filter: blur(4px);
+     -webkit-backdrop-filter: blur(4px);
+     z-index: 200;
+     align-items: center;
+     justify-content: center;
+     padding: 20px;
+   }
+   .modal-overlay.open { display: flex; }
+   .modal-sheet {
+     background: white;
+     border-radius: 20px;
+     width: 100%;
+     max-width: 420px;
+     padding: 24px;
+     box-shadow: 0 16px 48px rgba(0,0,0,0.15);
+     animation: modalUp 0.25s ease-out;
+   }
+   @keyframes modalUp {
+     from { opacity: 0; transform: translateY(20px) scale(0.97); }
+     to   { opacity: 1; transform: translateY(0) scale(1); }
+   }
+   .modal-sheet h2 {
+     font-size: 20px;
+     font-weight: 700;
+     margin-bottom: 20px;
+   }
+   .form-group {
+     margin-bottom: 16px;
+   }
+   .form-group label {
+     display: block;
+     font-size: 13px;
+     font-weight: 600;
+     color: #424245;
+     margin-bottom: 6px;
+   }
+   .form-group input {
+     width: 100%;
+     padding: 10px 12px;
+     border: 1px solid #d2d2d7;
+     border-radius: 10px;
+     font-size: 15px;
+     outline: none;
+     transition: border-color 0.15s, box-shadow 0.15s;
+     background: #f9f9fb;
+   }
+   .form-group input:focus {
+     border-color: #8DB5B4;
+     box-shadow: 0 0 0 3px rgba(39,174,96,0.15);
+     background: white;
+   }
+   .price-input-wrap {
+     position: relative;
+   }
+   .price-input-wrap input {
+     padding-right: 36px;
+   }
+   .price-input-wrap .suffix {
+     position: absolute;
+     right: 12px;
+     top: 50%;
+     transform: translateY(-50%);
+     font-size: 14px;
+     color: #7D7D7D;
+     pointer-events: none;
+   }
+   .form-actions {
+     display: flex;
+     gap: 10px;
+     margin-top: 20px;
+   }
+   .form-actions button {
+     flex: 1;
+     padding: 12px;
+     border-radius: 12px;
+     font-size: 15px;
+     font-weight: 600;
+     border: none;
+     cursor: pointer;
+     transition: all 0.15s;
+   }
+   .btn-primary {
+     background: #8DB5B4;
+     color: white;
+   }
+   .btn-primary:hover { background: #759E9D; }
+   .btn-secondary {
+     background: #f0f0f2;
+     color: #424245;
+   }
+   .btn-secondary:hover { background: #e5e5ea; }
+   .btn-danger {
+     background: #FF4757;
+     color: white;
+   }
+   .btn-danger:hover { background: #E03E3E; }
+
+   /* === Bottom Tab Bar === */
+   .tab-bar {
+     position: fixed;
+     bottom: 0;
+     left: 0;
+     right: 0;
+     height: 54px;
+     padding-bottom: env(safe-area-inset-bottom, 0);
+     background: #F5F2EC;
+     backdrop-filter: blur(30px) saturate(1.4);
+     -webkit-backdrop-filter: blur(30px) saturate(1.4);
+     border-top: 1px solid rgba(60,60,67,0.08);
+     display: flex;
+     align-items: flex-start;
+     justify-content: space-around;
+     padding-top: 5px;
+     z-index: 100;
+   }
+   .tab-item {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     gap: 2px;
+     background: none;
+     border: none;
+     cursor: pointer;
+     padding: 0 12px;
+     min-width: 56px;
+     transition: all 0.15s;
+     position: relative;
+   }
+   .tab-item svg {
+     width: 24px;
+     height: 24px;
+     color: #7D7D7D;
+     transition: color 0.15s;
+   }
+   .tab-item span {
+     font-size: 10px;
+     font-weight: 500;
+     color: #7D7D7D;
+     transition: color 0.15s;
+   }
+   .tab-item.active svg,
+   .tab-item.active span { color: #8DB5B4; }
+
+   ::-webkit-scrollbar { width: 4px; }
+   ::-webkit-scrollbar-track { background: transparent; }
+   ::-webkit-scrollbar-thumb { background: #d2d2d7; border-radius: 2px; }
+ </style>
+ </head>
+ <body>
+
+ <!-- Header -->
+ <div class="page-header">
+   <h1>球场 <span class="count-badge" id="countBadge"></span></h1>
+ </div>
+
+ <!-- List -->
+ <div class="list-wrap" id="listWrap"></div>
+
+ <!-- FAB -->
+ <button class="fab" id="fabAdd" title="添加球场">
+   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+     <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+   </svg>
+ </button>
+
+ <!-- Modal -->
+ <div class="modal-overlay" id="modalOverlay">
+   <div class="modal-sheet" id="modalSheet">
+     <h2 id="modalTitle">添加球场</h2>
+
+     <div class="form-group">
+       <label>球场名称</label>
+       <input type="text" id="inputName" placeholder="例：3号场 / 室内馆" autocomplete="off">
+     </div>
+
+     <div class="form-group">
+       <label>每小时价格（元）</label>
+       <div class="price-input-wrap">
+         <input type="number" id="inputPrice" placeholder="例：120" min="0" step="1">
+         <span class="suffix">元/时</span>
+       </div>
+     </div>
+
+     <div class="form-actions">
+       <button class="btn-secondary" id="btnCancel">取消</button>
+       <button class="btn-primary" id="btnSave">保存</button>
+     </div>
+   </div>
+ </div>
+
+ <!-- Confirm Dialog -->
+ <div class="modal-overlay" id="confirmOverlay">
+   <div class="modal-sheet" style="text-align:center;">
+     <p style="font-size:16px;margin-bottom:8px;font-weight:600;">确认删除</p>
+     <p style="font-size:14px;color:#7D7D7D;margin-bottom:20px;" id="confirmText">确定要删除这个球场吗？</p>
+     <div class="form-actions">
+       <button class="btn-secondary" id="confirmCancel">取消</button>
+       <button class="btn-danger" id="confirmOk">删除</button>
+     </div>
+   </div>
+ </div>
+
+ <!-- Bottom Tab Bar -->
+ <nav class="tab-bar">
+   <button class="tab-item" data-page="index" onclick="location.href='index.html'">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+       <path d="M3 12h1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8h1"/><path d="M12 2 2 12h3v8h6v-6h2v6h6v-8h3Z"/><path d="M15 10V6h-2v2"/>
+     </svg>
+     <span>首页</span>
+   </button>
+   <button class="tab-item" data-page="friends" onclick="location.href='friends.html'">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+     </svg>
+     <span>朋友们</span>
+   </button>
+   <button class="tab-item active" data-page="courts" onclick="location.href='courts.html'">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+       <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
+     </svg>
+     <span>球场</span>
+   </button>
+   <button class="tab-item" data-page="games" onclick="location.href='games.html'">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+       <rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4"/><path d="M14 12h4"/><path d="M10 10v4"/><path d="M18 14V8"/>
+     </svg>
+     <span>球局</span>
+   </button>
+ </nav>
+
+ <script>
+   const STORAGE_KEY = 'manager_courts';
+
+   let courts = [];
+   let editingId = null;
+   let deleteTargetId = null;
+
+   const listWrap = document.getElementById('listWrap');
+   const countBadge = document.getElementById('countBadge');
+   const fabAdd = document.getElementById('fabAdd');
+   const modalOverlay = document.getElementById('modalOverlay');
+   const modalTitle = document.getElementById('modalTitle');
+   const inputName = document.getElementById('inputName');
+   const inputPrice = document.getElementById('inputPrice');
+   const btnCancel = document.getElementById('btnCancel');
+   const btnSave = document.getElementById('btnSave');
+   const confirmOverlay = document.getElementById('confirmOverlay');
+   const confirmText = document.getElementById('confirmText');
+   const confirmCancel = document.getElementById('confirmCancel');
+   const confirmOk = document.getElementById('confirmOk');
+
+   // === Data ===
+   function load() {
+     try { courts = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+     catch { courts = []; }
+   }
+   function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(courts)); }
+   function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+   // === Render ===
+   function render() {
+     countBadge.textContent = `共 ${courts.length} 个`;
+
+     if (courts.length === 0) {
+       listWrap.innerHTML = `<div class="empty-state"><div class="icon">🏟️</div><p>还没有球场，点右下角添加吧</p></div>`;
+       return;
+     }
+
+     listWrap.innerHTML = courts.map(c => `
+       <div class="court-card" data-id="${c.id}">
+         <div class="court-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+             <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
+           </svg>
+         </div>
+         <div class="court-info">
+           <div class="court-name">${escapeHtml(c.name)}</div>
+           <div class="court-price"><strong>${c.price}</strong> 元 / 小时</div>
+         </div>
+         <div class="court-actions">
+           <button class="btn-edit" onclick="editCourt('${c.id}')" title="编辑">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+               <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+             </svg>
+           </button>
+           <button class="btn-delete" onclick="confirmDelete('${c.id}')" title="删除">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+               <path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+             </svg>
+           </button>
+         </div>
+       </div>
+     `).join('');
+   }
+
+   function escapeHtml(s) {
+     const d = document.createElement('div');
+     d.textContent = s;
+     return d.innerHTML;
+   }
+
+   // === Modal ===
+   function openModal(id) {
+     editingId = id || null;
+     modalTitle.textContent = id ? '编辑球场' : '添加球场';
+     if (id) {
+       const c = courts.find(x => x.id === id);
+       if (c) { inputName.value = c.name; inputPrice.value = c.price; }
+     } else {
+       inputName.value = ''; inputPrice.value = '';
+     }
+     modalOverlay.classList.add('open');
+     setTimeout(() => inputName.focus(), 100);
+   }
+   function closeModal() { modalOverlay.classList.remove('open'); editingId = null; }
+
+   function handleSave() {
+     const name = inputName.value.trim();
+     const price = parseFloat(inputPrice.value);
+     if (!name) { alert('请输入球场名称'); return; }
+     if (isNaN(price) || price <= 0) { alert('请输入有效的每小时价格'); return; }
+
+     if (editingId) {
+       const idx = courts.findIndex(x => x.id === editingId);
+       if (idx !== -1) { courts[idx] = { ...courts[idx], name, price, updatedAt: new Date().toISOString() }; }
+     } else {
+       courts.push({ id: genId(), name, price, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+     }
+     save();
+     render();
+     closeModal();
+   }
+
+   // === Actions ===
+   function editCourt(id) { openModal(id); }
+   function confirmDelete(id) {
+     deleteTargetId = id;
+     const c = courts.find(x => x.id === id);
+     confirmText.textContent = `确定要删除「${c.name}」吗？`;
+     confirmOverlay.classList.add('open');
+   }
+
+   // === Events ===
+   fabAdd.addEventListener('click', () => openModal(null));
+   btnCancel.addEventListener('click', closeModal);
+   btnSave.addEventListener('click', handleSave);
+   modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+
+   confirmCancel.addEventListener('click', () => { confirmOverlay.classList.remove('open'); deleteTargetId = null; });
+   confirmOk.addEventListener('click', () => {
+     if (deleteTargetId) { courts = courts.filter(x => x.id !== deleteTargetId); save(); render(); }
+     confirmOverlay.classList.remove('open');
+     deleteTargetId = null;
+   });
+   confirmOverlay.addEventListener('click', (e) => {
+     if (e.target === confirmOverlay) { confirmOverlay.classList.remove('open'); deleteTargetId = null; }
+   });
+
+   document.addEventListener('keydown', (e) => {
+     if (e.key === 'Escape') {
+       if (confirmOverlay.classList.contains('open')) { confirmOverlay.classList.remove('open'); deleteTargetId = null; }
+       else if (modalOverlay.classList.contains('open')) { closeModal(); }
+     }
+   });
+
+   // === Init ===
+   load();
+   render();
+ </script>
+ </body>
+ </html>

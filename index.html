@@ -1,0 +1,742 @@
+﻿ <!DOCTYPE html>
+ <html lang="zh-CN">
+ <head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+ <title>组局者</title>
+ <style>
+   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+   body {
+     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+     background: #F5F2EC;
+     color: #4A3F6B;
+     padding-bottom: 90px;
+     -webkit-font-smoothing: antialiased;
+   }
+
+   /* === Hero === */
+   .hero {
+     padding: 40px 24px 24px;
+     text-align: center;
+   }
+   .hero-icon {
+     width: 72px;
+     height: 72px;
+     margin: 0 auto 16px;
+     background: linear-gradient(135deg, #8875A8, #5C4A80);
+     border-radius: 20px;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     color: white;
+     box-shadow: 0 8px 24px rgba(74,108,247,0.25);
+   }
+   .hero-icon svg { width: 36px; height: 36px; }
+   .hero h1 {
+     font-size: 28px;
+     font-weight: 700;
+     letter-spacing: -0.5px;
+   }
+   .hero p {
+     font-size: 14px;
+     color: #7D7D7D;
+     margin-top: 6px;
+   }
+
+   /* === Stats Cards === */
+   .stats-grid {
+     display: grid;
+     grid-template-columns: repeat(3, 1fr);
+     gap: 12px;
+     padding: 0 20px 20px;
+   }
+   .stat-card {
+     background: rgba(255,255,255,0.85);
+     backdrop-filter: blur(10px);
+     -webkit-backdrop-filter: blur(10px);
+     border-radius: 16px;
+     padding: 18px 12px;
+     text-align: center;
+     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+     cursor: pointer;
+     transition: transform 0.15s, box-shadow 0.15s;
+     text-decoration: none;
+     color: inherit;
+     display: block;
+   }
+   .stat-card:hover {
+     transform: translateY(-2px);
+     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+   }
+   .stat-number {
+     font-size: 32px;
+     font-weight: 700;
+     letter-spacing: -0.5px;
+   }
+   .stat-label {
+     font-size: 13px;
+     color: #7D7D7D;
+     margin-top: 2px;
+     font-weight: 500;
+   }
+   .stat-card.friends .stat-number { color: #8875A8; }
+   .stat-card.courts .stat-number { color: #A9CC61; }
+   .stat-card.games .stat-number { color: #2792C3; }
+
+   /* === Section === */
+   .section {
+     padding: 0 20px 20px;
+   }
+   .section-title {
+     font-size: 16px;
+     font-weight: 600;
+     margin-bottom: 12px;
+     color: #4A3F6B;
+   }
+
+   /* === Action Cards === */
+   .action-grid {
+     display: flex;
+     flex-direction: column;
+     gap: 10px;
+   }
+  .action-card {
+    text-decoration: none;
+    background: rgba(255,255,255,0.8);
+     backdrop-filter: blur(10px);
+     -webkit-backdrop-filter: blur(10px);
+     border-radius: 14px;
+     padding: 16px;
+     display: flex;
+     align-items: center;
+     gap: 14px;
+     cursor: pointer;
+     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+     transition: transform 0.15s, box-shadow 0.15s;
+     border: none;
+     width: 100%;
+     text-align: left;
+     font-size: inherit;
+     color: inherit;
+   }
+   .action-card:hover {
+     transform: translateY(-1px);
+     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+   }
+   .action-icon {
+     width: 44px;
+     height: 44px;
+     border-radius: 12px;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     flex-shrink: 0;
+   }
+   .action-icon.blue { background: rgba(136,117,168,0.1); color: #8875A8; }
+   .action-icon.green { background: rgba(169,204,97,0.1); color: #A9CC61; }
+   .action-icon.purple { background: rgba(108,92,231,0.1); color: #5C4A80; }
+   .action-icon.orange { background: rgba(39,146,195,0.1); color: #2792C3; }
+   .action-icon svg { width: 22px; height: 22px; }
+   .action-info { flex: 1; }
+   .action-info .action-name {
+     font-size: 15px;
+     font-weight: 600;
+   }
+   .action-info .action-desc {
+     font-size: 12px;
+     color: #7D7D7D;
+     margin-top: 2px;
+   }
+   .action-arrow { color: #d2d2d7; font-size: 18px; }
+
+   /* === Import Dialog === */
+   .modal-overlay {
+     display: none;
+     position: fixed;
+     inset: 0;
+     background: rgba(0,0,0,0.4);
+     backdrop-filter: blur(4px);
+     -webkit-backdrop-filter: blur(4px);
+     z-index: 200;
+     align-items: center;
+     justify-content: center;
+     padding: 20px;
+   }
+   .modal-overlay.open { display: flex; }
+   .modal-sheet {
+     background: white;
+     border-radius: 20px;
+     width: 100%;
+     max-width: 400px;
+     padding: 24px;
+     box-shadow: 0 16px 48px rgba(0,0,0,0.15);
+     animation: modalUp 0.25s ease-out;
+   }
+   @keyframes modalUp {
+     from { opacity: 0; transform: translateY(20px) scale(0.97); }
+     to   { opacity: 1; transform: translateY(0) scale(1); }
+   }
+   .modal-sheet h2 {
+     font-size: 20px;
+     font-weight: 700;
+     margin-bottom: 6px;
+   }
+   .modal-sheet p.desc {
+     font-size: 14px;
+     color: #7D7D7D;
+     margin-bottom: 20px;
+   }
+   .import-info {
+     background: #f9f9fb;
+     border-radius: 12px;
+     padding: 12px;
+     margin-bottom: 16px;
+     font-size: 13px;
+     line-height: 1.8;
+   }
+   .import-info strong { color: #4A3F6B; }
+   .strategy-options {
+     display: flex;
+     flex-direction: column;
+     gap: 10px;
+     margin-bottom: 20px;
+   }
+   .strategy-option {
+     display: flex;
+     align-items: flex-start;
+     gap: 12px;
+     padding: 12px;
+     border: 1.5px solid #d2d2d7;
+     border-radius: 12px;
+     cursor: pointer;
+     transition: all 0.15s;
+   }
+   .strategy-option:hover { border-color: #8875A8; }
+   .strategy-option.selected {
+     border-color: #8875A8;
+     background: rgba(74,108,247,0.06);
+   }
+   .strategy-option input[type="radio"] {
+     margin-top: 3px;
+     accent-color: #8875A8;
+   }
+   .strategy-option .strategy-label {
+     font-size: 14px;
+     font-weight: 600;
+   }
+   .strategy-option .strategy-desc {
+     font-size: 12px;
+     color: #7D7D7D;
+     margin-top: 2px;
+   }
+   .modal-actions {
+     display: flex;
+     gap: 10px;
+   }
+   .modal-actions button {
+     flex: 1;
+     padding: 12px;
+     border-radius: 12px;
+     font-size: 15px;
+     font-weight: 600;
+     border: none;
+     cursor: pointer;
+     transition: all 0.15s;
+   }
+   .btn-primary {
+     background: #8875A8;
+     color: white;
+   }
+   .btn-primary:hover { background: #6B5690; }
+   .btn-secondary {
+     background: #f0f0f2;
+     color: #4A3F6B;
+   }
+   .btn-secondary:hover { background: #e5e5ea; }
+   .btn-success {
+     background: #A9CC61;
+     color: white;
+   }
+   .btn-success:hover { background: #8BB04A; }
+
+   /* === Toast === */
+   .toast {
+     position: fixed;
+     top: 24px;
+     left: 50%;
+     transform: translateX(-50%) translateY(-80px);
+     background: rgba(0,0,0,0.8);
+     backdrop-filter: blur(10px);
+     color: white;
+     padding: 10px 24px;
+     border-radius: 12px;
+     font-size: 14px;
+     font-weight: 500;
+     z-index: 300;
+     transition: transform 0.35s ease-out;
+     pointer-events: none;
+     white-space: nowrap;
+   }
+   .toast.show {
+     transform: translateX(-50%) translateY(0);
+   }
+
+   /* === Bottom Tab Bar === */
+   .tab-bar {
+     position: fixed;
+     bottom: 0;
+     left: 0;
+     right: 0;
+     height: 54px;
+     padding-bottom: env(safe-area-inset-bottom, 0);
+     background: #F5F2EC;
+     backdrop-filter: blur(30px) saturate(1.4);
+     -webkit-backdrop-filter: blur(30px) saturate(1.4);
+     border-top: 1px solid rgba(60,60,67,0.08);
+     display: flex;
+     align-items: flex-start;
+     justify-content: space-around;
+     padding-top: 5px;
+     z-index: 100;
+   }
+   .tab-item {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     gap: 2px;
+     background: none;
+     border: none;
+     cursor: pointer;
+     padding: 0 12px;
+     min-width: 56px;
+     transition: all 0.15s;
+     position: relative;
+   }
+   .tab-item svg { width: 24px; height: 24px; color: #7D7D7D; transition: color 0.15s; }
+   .tab-item span { font-size: 10px; font-weight: 500; color: #7D7D7D; transition: color 0.15s; }
+   .tab-item.active svg, .tab-item.active span { color: #8875A8; }
+
+   ::-webkit-scrollbar { width: 4px; }
+   ::-webkit-scrollbar-track { background: transparent; }
+   ::-webkit-scrollbar-thumb { background: #d2d2d7; border-radius: 2px; }
+ </style>
+ </head>
+ <body>
+
+ <!-- Hero -->
+ <div class="hero">
+   <div class="hero-icon">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+       <circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M6 12h12"/>
+       <circle cx="12" cy="12" r="4" fill="currentColor" opacity="0.3"/>
+     </svg>
+   </div>
+   <h1>组局者</h1>
+   <p>管理朋友们 · 创建球局 · 轻松 AA</p>
+ </div>
+
+ <!-- Stats -->
+ <div class="stats-grid">
+   <a class="stat-card friends" href="friends.html">
+     <div class="stat-number" id="statFriends">0</div>
+     <div class="stat-label">朋友们</div>
+   </a>
+   <a class="stat-card courts" href="courts.html">
+     <div class="stat-number" id="statCourts">0</div>
+     <div class="stat-label">球场</div>
+   </a>
+   <a class="stat-card games" href="games.html">
+     <div class="stat-number" id="statGames">0</div>
+     <div class="stat-label">球局</div>
+   </a>
+ </div>
+
+ <!-- Quick Actions -->
+ <div class="section">
+   <div class="section-title">快捷操作</div>
+   <div class="action-grid">
+     <a class="action-card" href="friends.html">
+       <div class="action-icon blue">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+         </svg>
+       </div>
+       <div class="action-info">
+         <div class="action-name">管理朋友们</div>
+         <div class="action-desc">添加、编辑好友信息和标签</div>
+       </div>
+       <span class="action-arrow">›</span>
+     </a>
+     <a class="action-card" href="courts.html">
+       <div class="action-icon green">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+           <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
+         </svg>
+       </div>
+       <div class="action-info">
+         <div class="action-name">管理球场</div>
+         <div class="action-desc">添加球场和设置每小时价格</div>
+       </div>
+       <span class="action-arrow">›</span>
+     </a>
+     <a class="action-card" href="games.html">
+       <div class="action-icon orange">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+           <rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4"/><path d="M14 12h4"/><path d="M10 10v4"/><path d="M18 14V8"/>
+         </svg>
+       </div>
+       <div class="action-info">
+         <div class="action-name">创建球局</div>
+         <div class="action-desc">新建球局、分队和 AA 计算</div>
+       </div>
+       <span class="action-arrow">›</span>
+     </a>
+   </div>
+ </div>
+
+ <!-- Data Management -->
+ <div class="section">
+   <div class="section-title">数据管理</div>
+   <div class="action-grid">
+     <button class="action-card" onclick="handleExport()">
+       <div class="action-icon purple">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+         </svg>
+       </div>
+       <div class="action-info">
+        <div class="action-name">导出数据</div>
+         <div class="action-desc">选择要导出的数据（好友/球场/球局）为 JSON 备份文件</div>
+       </div>
+       <span class="action-arrow">›</span>
+     </button>
+     <button class="action-card" onclick="document.getElementById('importFileInput').click()">
+       <div class="action-icon orange" style="background:rgba(39,146,195,0.1);color:#2792C3;">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+         </svg>
+       </div>
+       <div class="action-info">
+         <div class="action-name">导入数据</div>
+         <div class="action-desc">从备份文件导入好友名单和球场数据</div>
+       </div>
+       <span class="action-arrow">›</span>
+     </button>
+   </div>
+ </div>
+
+ <!-- Hidden file input -->
+ <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="handleImport(event)">
+
+ <!-- Import Dialog -->
+ <div class="modal-overlay" id="importModal">
+   <div class="modal-sheet">
+     <h2>导入数据</h2>
+     <p class="desc">选择导入策略后点击确认</p>
+     <div class="import-info" id="importInfo">
+       <div>👥 将导入 <strong id="importFriendCount">0</strong> 位好友</div>
+       <div>🏟 将导入 <strong id="importCourtCount">0</strong> 个球场</div>
+       <div style="margin-top:6px;font-size:12px;color:#999;" id="importFileName"></div>
+     </div>
+     <div class="strategy-options">
+       <label class="strategy-option selected" id="strategyOverwrite" onclick="selectStrategy('overwrite')">
+         <input type="radio" name="strategy" value="overwrite" checked>
+         <div>
+           <div class="strategy-label">🔁 完全覆盖</div>
+           <div class="strategy-desc">清空本地所有好友和球场数据，用导入文件替换。适合恢复备份。</div>
+         </div>
+       </label>
+       <label class="strategy-option" id="strategyMerge" onclick="selectStrategy('merge')">
+         <input type="radio" name="strategy" value="merge">
+         <div>
+           <div class="strategy-label">🧠 智能合并</div>
+           <div class="strategy-desc">保留本地数据，按名字匹配后更新已有记录，新增不存在的记录。</div>
+         </div>
+       </label>
+     </div>
+     <div class="modal-actions">
+       <button class="btn-secondary" onclick="closeImportModal()">取消</button>
+       <button class="btn-primary" onclick="confirmImport()">确认导入</button>
+     </div>
+ </div>
+</div>
+
+<!-- Export Dialog -->
+<div class="modal-overlay" id="exportModal">
+  <div class="modal-sheet">
+    <h2>导出数据</h2>
+    <p class="desc">选择要导出的数据类型</p>
+    <div class="strategy-options">
+      <label class="strategy-option selected" id="exportFriends">
+        <input type="checkbox" checked>
+        <div>
+          <div class="strategy-label">👥 好友名单</div>
+          <div class="strategy-desc">所有人名、标签、备注信息</div>
+        </div>
+      </label>
+      <label class="strategy-option selected" id="exportCourts">
+        <input type="checkbox" checked>
+        <div>
+          <div class="strategy-label">🏟 球场数据</div>
+          <div class="strategy-desc">球场名称和每小时价格</div>
+        </div>
+      </label>
+      <label class="strategy-option selected" id="exportGames">
+        <input type="checkbox" checked>
+        <div>
+          <div class="strategy-label">🏐 球局历史</div>
+          <div class="strategy-desc">所有球局记录、分队和费用明细</div>
+        </div>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeExportModal()">取消</button>
+      <button class="btn-primary" onclick="confirmExport()">导出</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Tab Bar -->
+ <nav class="tab-bar">
+   <button class="tab-item active" onclick="location.href='index.html'">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+       <path d="M3 12h1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8h1"/><path d="M12 2 2 12h3v8h6v-6h2v6h6v-8h3Z"/><path d="M15 10V6h-2v2"/>
+     </svg>
+     <span>首页</span>
+   </button>
+   <button class="tab-item" onclick="location.href='friends.html'">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+     </svg>
+     <span>朋友们</span>
+   </button>
+   <button class="tab-item" onclick="location.href='courts.html'">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+       <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
+     </svg>
+     <span>球场</span>
+   </button>
+   <button class="tab-item" onclick="location.href='games.html'">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+       <rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4"/><path d="M14 12h4"/><path d="M10 10v4"/><path d="M18 14V8"/>
+     </svg>
+     <span>球局</span>
+   </button>
+ </nav>
+
+ <!-- Toast -->
+ <div class="toast" id="toast"></div>
+
+ <script>
+   const STORAGE_FRIENDS = 'manager_friends';
+   const STORAGE_COURTS = 'manager_courts';
+   const STORAGE_GAMES = 'manager_games';
+
+   let importData = null;
+   let importStrategy = 'overwrite';
+
+   // === Stats ===
+   function updateStats() {
+     try {
+       const friends = JSON.parse(localStorage.getItem(STORAGE_FRIENDS)) || [];
+       const courts = JSON.parse(localStorage.getItem(STORAGE_COURTS)) || [];
+       const games = JSON.parse(localStorage.getItem(STORAGE_GAMES)) || [];
+       document.getElementById('statFriends').textContent = friends.length;
+       document.getElementById('statCourts').textContent = courts.length;
+       document.getElementById('statGames').textContent = games.length;
+     } catch { /* ignore */ }
+   }
+
+   // === Toast ===
+   let toastTimer = null;
+   function showToast(msg) {
+     const el = document.getElementById('toast');
+     el.textContent = msg;
+     el.classList.add('show');
+     clearTimeout(toastTimer);
+     toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+   }
+
+   // === Export ===
+   function handleExport() {
+     document.getElementById('exportModal').classList.add('open');
+     // Reset all checkboxes to checked
+     document.querySelectorAll('#exportModal input[type=checkbox]').forEach(c => c.checked = true);
+     ['exportFriends','exportCourts','exportGames'].forEach(id => document.getElementById(id).classList.add('selected'));
+   }
+   function closeExportModal() {
+     document.getElementById('exportModal').classList.remove('open');
+   }
+   document.getElementById('exportModal').addEventListener('click', (e) => {
+     if (e.target === document.getElementById('exportModal')) closeExportModal();
+   });
+   // Toggle selected class when checkbox changes
+   document.addEventListener('change', (e) => {
+     if (e.target.closest('#exportModal')) {
+       const label = e.target.closest('.strategy-option');
+       if (label) label.classList.toggle('selected', e.target.checked);
+     }
+   });
+
+   function confirmExport() {
+     const exportFriends = document.getElementById('exportFriends').querySelector('input').checked;
+     const exportCourts = document.getElementById('exportCourts').querySelector('input').checked;
+     const exportGames = document.getElementById('exportGames').querySelector('input').checked;
+
+     if (!exportFriends && !exportCourts && !exportGames) {
+       alert('请至少选择一项要导出的数据');
+       return;
+     }
+
+     try {
+       const data = {};
+       if (exportFriends) data.friends = JSON.parse(localStorage.getItem(STORAGE_FRIENDS)) || [];
+       if (exportCourts) data.courts = JSON.parse(localStorage.getItem(STORAGE_COURTS)) || [];
+       if (exportGames) {
+         const games = JSON.parse(localStorage.getItem(STORAGE_GAMES)) || [];
+         data.games = games.map(g => ({
+           name: g.name,
+           startTime: g.startTime,
+           duration: g.duration,
+           courtName: (JSON.parse(localStorage.getItem(STORAGE_COURTS))||[]).find(c=>c.id===g.courtId)?.name || '',
+           participantCount: (g.participantIds||[]).length,
+           teams: (g.teams||[]).map(t => ({ name: t.name, memberCount: (t.memberIds||[]).length })),
+           aaFee: (function(){const c=(JSON.parse(localStorage.getItem(STORAGE_COURTS))||[]).find(x=>x.id===g.courtId);return c?Math.ceil(c.price*g.duration/(g.participantIds||[]).length||0):0;})()
+         }));
+       }
+       data.exportedAt = new Date().toISOString();
+
+       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+       const url = URL.createObjectURL(blob);
+       const a = document.createElement('a');
+       a.href = url;
+       a.download = '组局者备份_' + new Date().toISOString().slice(0,10) + '.json';
+       document.body.appendChild(a);
+       a.click();
+       document.body.removeChild(a);
+       URL.revokeObjectURL(url);
+       closeExportModal();
+       showToast('✅ 导出成功');
+     } catch (e) {
+       alert('导出失败：' + e.message);
+     }
+   }
+   // === Import ===
+   function handleImport(event) {
+     const file = event.target.files[0];
+     if (!file) return;
+     const reader = new FileReader();
+     reader.onload = (e) => {
+       try {
+         importData = JSON.parse(e.target.result);
+         if (!importData.friends || !importData.courts) {
+           alert('文件格式错误：缺少 friends 或 courts 字段');
+           importData = null;
+           return;
+         }
+         document.getElementById('importFriendCount').textContent = importData.friends.length;
+         document.getElementById('importCourtCount').textContent = importData.courts.length;
+         document.getElementById('importFileName').textContent = `文件：${file.name}`;
+         document.getElementById('importModal').classList.add('open');
+         selectStrategy('overwrite');
+       } catch (err) {
+         alert('文件解析失败：请选择有效的 JSON 备份文件');
+       }
+     };
+     reader.readAsText(file);
+     event.target.value = '';
+   }
+
+   function selectStrategy(s) {
+     importStrategy = s;
+     document.getElementById('strategyOverwrite').classList.toggle('selected', s === 'overwrite');
+     document.getElementById('strategyMerge').classList.toggle('selected', s === 'merge');
+     document.querySelector(`input[name="strategy"][value="${s}"]`).checked = true;
+   }
+
+   function closeImportModal() {
+     document.getElementById('importModal').classList.remove('open');
+     importData = null;
+   }
+   document.getElementById('importModal').addEventListener('click', (e) => {
+     if (e.target === document.getElementById('importModal')) closeImportModal();
+   });
+
+   function confirmImport() {
+     if (!importData) return;
+
+     try {
+       if (importStrategy === 'overwrite') {
+         // Full replace
+         localStorage.setItem(STORAGE_FRIENDS, JSON.stringify(importData.friends));
+         localStorage.setItem(STORAGE_COURTS, JSON.stringify(importData.courts));
+         showToast(`✅ 导入完成：${importData.friends.length} 位好友，${importData.courts.length} 个球场`);
+       } else {
+         // Smart merge
+         const localFriends = JSON.parse(localStorage.getItem(STORAGE_FRIENDS)) || [];
+         const localCourts = JSON.parse(localStorage.getItem(STORAGE_COURTS)) || [];
+
+         // Merge friends: match by name+昵称, update existing, add new
+         const mergedFriends = mergeArray(localFriends, importData.friends, friendMatchKey);
+         const mergedCourts = mergeArray(localCourts, importData.courts, courtMatchKey);
+
+         localStorage.setItem(STORAGE_FRIENDS, JSON.stringify(mergedFriends));
+         localStorage.setItem(STORAGE_COURTS, JSON.stringify(mergedCourts));
+
+         const addedF = mergedFriends.length - localFriends.length;
+         const addedC = mergedCourts.length - localCourts.length;
+         showToast(`✅ 合并完成：新增 ${addedF} 位好友、${addedC} 个球场，已有记录已更新`);
+       }
+
+       updateStats();
+       closeImportModal();
+     } catch (e) {
+       alert('导入失败：' + e.message);
+     }
+   }
+
+   function friendMatchKey(f) {
+     // Match by combination of name and nickname
+     const n = (f.name || '').trim();
+     const nn = (f.nickname || '').trim();
+     return n + '|' + nn;
+   }
+   function courtMatchKey(c) {
+     return (c.name || '').trim();
+   }
+
+   function mergeArray(localArr, importArr, keyFn) {
+     const localMap = new Map();
+     localArr.forEach(item => localMap.set(keyFn(item), item));
+
+     let added = 0;
+     importArr.forEach(item => {
+       const key = keyFn(item);
+       if (localMap.has(key)) {
+         // Update existing: keep local ID, overwrite other fields
+         const existing = localMap.get(key);
+         const merged = { ...item, id: existing.id, createdAt: existing.createdAt, updatedAt: new Date().toISOString() };
+         localMap.set(key, merged);
+       } else {
+         // Add new
+         localMap.set(key, { ...item, id: item.id || ('imp_' + Date.now().toString(36) + added), createdAt: item.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() });
+         added++;
+       }
+     });
+
+     return Array.from(localMap.values());
+   }
+
+   // === Keyboard ===
+   document.addEventListener('keydown', (e) => {
+     if (e.key === 'Escape') {
+       const modal = document.getElementById('importModal');
+       if (modal.classList.contains('open')) closeImportModal();
+     }
+   });
+
+   // === Init ===
+   updateStats();
+ </script>
+ </body>
+ </html>

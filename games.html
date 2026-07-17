@@ -1,0 +1,1421 @@
+﻿ <!DOCTYPE html>
+ <html lang="zh-CN">
+ <head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+ <title>球局 - 组局者</title>
+<style>
+   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+   body {
+     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roaoto, "PingFang SC", "Microsoft YaHei", sans-serif;
+     background: #F5F2EC;
+     color: #1D4B6B;
+     padding-bottom: 90px;
+     -webkit-font-smoothing: antialiased;
+   }
+   input, button, select, textarea { font-family: inherit; }
+   .view { display: none; }
+   .view.active { display: block; }
+
+   /* === Page Header === */
+   .page-header {
+     padding: 20px 20px 12px;
+     display: flex;
+     align-items: center;
+     justify-content: space-between;
+     position: sticky;
+     top: 0;
+     background: #F5F2EC;
+     z-index: 10;
+   }
+   .page-header h1 {
+     font-size: 28px;
+     font-weight: 700;
+     letter-spacing: -0.5px;
+   }
+   .page-header .count-badge {
+     font-size: 14px;
+     font-weight: 400;
+     color: #7D7D7D;
+   }
+   .btn-back {
+     background: none;
+     border: none;
+     font-size: 24px;
+     cursor: pointer;
+     color: #2792C3;
+     padding: 4px;
+     width: 36px;
+     height: 36px;
+     border-radius: 8px;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     transition: background 0.15s;
+   }
+   .btn-back:hover { background: rgba(230,126,34,0.1); }
+   .btn-back svg { width: 22px; height: 22px; }
+
+   /* === List View === */
+   .list-wrap {
+     padding: 0 20px;
+     display: flex;
+     flex-direction: column;
+     gap: 10px;
+   }
+   .empty-state {
+     text-align: center;
+     padding: 60px 20px;
+     color: #7D7D7D;
+   }
+   .empty-state .icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+   .empty-state p { font-size: 15px; }
+   .btn-create {
+     width: 100%;
+     padding: 14px;
+     background: #2792C3;
+     color: white;
+     border: none;
+     border-radius: 14px;
+     font-size: 16px;
+     font-weight: 600;
+     cursor: pointer;
+     transition: background 0.15s;
+     margin: 0 20px 12px;
+     width: calc(100% - 40px);
+   }
+   .btn-create:hover { background: #1D7AA3; }
+
+   /* === Game Card === */
+   .game-card {
+     background: rgba(255,255,255,0.8);
+     backdrop-filter: blur(10px);
+     -webkit-backdrop-filter: blur(10px);
+     border-radius: 14px;
+     padding: 16px;
+     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+     cursor: pointer;
+     transition: transform 0.15s, box-shadow 0.15s;
+   }
+   .game-card:hover {
+     transform: translateY(-1px);
+     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+   }
+   .game-card-top {
+     display: flex;
+     justify-content: space-between;
+     align-items: flex-start;
+     margin-bottom: 8px;
+   }
+   .game-card-title {
+     font-size: 16px;
+     font-weight: 600;
+   }
+   .game-card-date {
+     font-size: 12px;
+     color: #7D7D7D;
+     white-space: nowrap;
+   }
+   .game-card-meta {
+     display: flex;
+     gap: 12px;
+     font-size: 13px;
+     color: #7D7D7D;
+     flex-wrap: wrap;
+   }
+   .game-card-meta span { display: flex; align-items: center; gap: 4px; }
+   .game-card-aa {
+     margin-top: 8px;
+     font-size: 13px;
+   }
+   .game-card-aa .aa-amount {
+     font-weight: 700;
+     color: #2792C3;
+   }
+
+   /* === Create Form === */
+   .form-wrap {
+     padding: 12px 20px 24px;
+   }
+   .form-group {
+     margin-bottom: 16px;
+   }
+   .form-group label {
+     display: block;
+     font-size: 13px;
+     font-weight: 600;
+     color: #424245;
+     margin-bottom: 6px;
+   }
+   .form-group input,
+   .form-group select {
+     width: 100%;
+     padding: 10px 12px;
+     border: 1px solid #d2d2d7;
+     border-radius: 10px;
+     font-size: 15px;
+     outline: none;
+     transition: border-color 0.15s, box-shadow 0.15s;
+     background: #f9f9fb;
+     color: #1D4B6B;
+   }
+   .form-group input:focus,
+   .form-group select:focus {
+     border-color: #2792C3;
+     box-shadow: 0 0 0 3px rgba(230,126,34,0.15);
+     background: white;
+   }
+   .form-group .hint { font-size: 11px; color: #7D7D7D; margin-top: 4px; }
+   .form-row {
+     display: flex;
+     gap: 12px;
+   }
+   .form-row .form-group { flex: 1; }
+   .participant-select-btn {
+     width: 100%;
+     padding: 10px 12px;
+     border: 1px solid #d2d2d7;
+     border-radius: 10px;
+     background: #f9f9fb;
+     font-size: 14px;
+     text-align: left;
+     cursor: pointer;
+     transition: all 0.15s;
+     color: #7D7D7D;
+     display: flex;
+     align-items: center;
+     justify-content: space-between;
+   }
+   .participant-select-btn:hover { border-color: #2792C3; }
+   .participant-select-btn .count-badge-inline {
+     background: #2792C3;
+     color: white;
+     font-size: 12px;
+     padding: 1px 8px;
+     border-radius: 10px;
+   }
+   .selected-participants {
+     display: flex;
+     flex-wrap: wrap;
+     gap: 6px;
+     margin-top: 8px;
+   }
+   .selected-participant-tag {
+     font-size: 12px;
+     padding: 3px 10px;
+     border-radius: 12px;
+     background: rgba(230,126,34,0.1);
+     color: #2792C3;
+     display: flex;
+     align-items: center;
+     gap: 4px;
+   }
+   .selected-participant-tag .remove {
+     cursor: pointer;
+     font-weight: 700;
+     opacity: 0.6;
+   }
+   .selected-participant-tag .remove:hover { opacity: 1; }
+
+   /* === Detail View === */
+   .detail-wrap {
+     padding: 0 20px 24px;
+   }
+   .detail-header {
+     background: rgba(255,255,255,0.8);
+     backdrop-filter: blur(10px);
+     border-radius: 14px;
+     padding: 16px;
+     margin-bottom: 12px;
+     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+   }
+   .detail-header h2 {
+     font-size: 20px;
+     font-weight: 700;
+     margin-bottom: 6px;
+   }
+   .detail-meta {
+     font-size: 13px;
+     color: #7D7D7D;
+     line-height: 1.8;
+   }
+   .detail-meta strong { color: #1D4B6B; }
+
+   /* === AA Card === */
+   .aa-card {
+     background: linear-gradient(135deg, #2792C3, #1D7AA3);
+     border-radius: 14px;
+     padding: 16px;
+     color: white;
+     margin-bottom: 12px;
+     display: flex;
+     justify-content: space-between;
+     align-items: center;
+   }
+   .aa-card .label { font-size: 13px; opacity: 0.85; }
+   .aa-card .amount { font-size: 28px; font-weight: 700; }
+   .aa-card .sub { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+
+   /* === Teams Section === */
+   .section-title {
+     font-size: 16px;
+     font-weight: 600;
+     margin-bottom: 10px;
+     display: flex;
+     align-items: center;
+     justify-content: space-between;
+   }
+   .teams-scroll {
+     display: flex;
+     gap: 12px;
+     overflow-x: auto;
+     padding-bottom: 12px;
+     margin-bottom: 12px;
+   }
+   .team-card {
+    min-width: 280px;
+     background: rgba(255,255,255,0.8);
+     backdrop-filter: blur(10px);
+     border-radius: 14px;
+     padding: 14px;
+     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+     flex-shrink: 0;
+   }
+   .team-card-header {
+     display: flex;
+     justify-content: space-between;
+     align-items: center;
+     margin-bottom: 10px;
+     padding-bottom: 8px;
+     border-bottom: 1px solid #f0f0f0;
+   }
+   .team-card-header .team-name {
+     font-size: 14px;
+     font-weight: 600;
+   }
+   .team-card-header .team-count {
+     font-size: 11px;
+     color: #7D7D7D;
+   }
+   .team-card-header .btn-del-team {
+     background: none;
+     border: none;
+     cursor: pointer;
+     color: #7D7D7D;
+     width: 24px;
+     height: 24px;
+     border-radius: 6px;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     font-size: 14px;
+     transition: all 0.15s;
+   }
+   .team-card-header .btn-del-team:hover { background: rgba(255,71,87,0.1); color: #FF4757; }
+   .team-member {
+     display: flex;
+     align-items: center;
+     gap: 8px;
+     padding: 5px 0;
+     font-size: 13px;
+   }
+   .team-member-avatar {
+     width: 26px;
+     height: 26px;
+     border-radius: 50%;
+     background: #2792C3;
+     color: white;
+     font-size: 11px;
+     font-weight: 600;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     flex-shrink: 0;
+   }
+   .team-member-name { flex: 1; }
+   .team-member .btn-remove {
+     background: none; border: none; cursor: pointer;
+     color: #ccc; font-size: 14px; width: 20px; height: 20px;
+     border-radius: 4px; display: flex; align-items: center; justify-content: center;
+     transition: all 0.15s;
+   }
+   .team-member .btn-remove:hover { color: #FF4757; background: rgba(255,71,87,0.08); }
+   .team-add-btn {
+     width: 100%;
+     padding: 6px;
+     background: none;
+     border: none;
+     border-top: 1px solid #f0f0f0;
+     cursor: pointer;
+     font-size: 18px;
+     color: #2792C3;
+     margin-top: 6px;
+     padding-top: 5px;
+     transition: background 0.15s;
+     border-radius: 0 0 8px 8px;
+   }
+   .team-add-btn:hover { background: rgba(230,126,34,0.05); }
+   .new-team-card {
+     min-width: 200px;
+     max-width: 240px;
+     border: 2px dashed #d2d2d7;
+     border-radius: 14px;
+     padding: 14px;
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     justify-content: center;
+     gap: 8px;
+     flex-shrink: 0;
+   }
+   .new-team-card input {
+     width: 100%;
+     padding: 8px 10px;
+     border: 1px solid #d2d2d7;
+     border-radius: 8px;
+     font-size: 13px;
+     outline: none;
+   }
+   .new-team-card input:focus { border-color: #2792C3; }
+   .new-team-card .btn-create-team {
+     padding: 6px 16px;
+     background: #2792C3;
+     color: white;
+     border: none;
+     border-radius: 8px;
+     font-size: 13px;
+     font-weight: 600;
+     cursor: pointer;
+   }
+   .new-team-card .btn-create-team:hover { background: #1D7AA3; }
+   .teams-empty {
+     font-size: 14px;
+     color: #7D7D7D;
+     padding: 20px 0;
+     text-align: center;
+   }
+
+   /* === Participant List in Detail === */
+   .participant-detail-list {
+     background: rgba(255,255,255,0.8);
+     backdrop-filter: blur(10px);
+     border-radius: 14px;
+     padding: 12px 16px;
+     margin-bottom: 16px;
+   }
+   .participant-item {
+     display: flex;
+     align-items: center;
+     gap: 10px;
+     padding: 6px 0;
+     font-size: 14px;
+   }
+   .participant-item .avatar {
+     width: 28px; height: 28px; border-radius: 50%;
+     background: #ddd; color: #666;
+     font-size: 12px; font-weight: 600;
+     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+   }
+
+   /* === Buttons === */
+   .btn-primary {
+     width: 100%;
+     padding: 12px;
+     border-radius: 12px;
+     font-size: 15px;
+     font-weight: 600;
+     border: none;
+     cursor: pointer;
+     transition: all 0.15s;
+   }
+   .btn-primary.orange { background: #2792C3; color: white; }
+   .btn-primary.orange:hover { background: #1D7AA3; }
+   .btn-secondary {
+     background: #f0f0f2;
+     color: #424245;
+     padding: 12px;
+     border-radius: 12px;
+     font-size: 15px;
+     font-weight: 600;
+     border: none;
+     cursor: pointer;
+     transition: all 0.15s;
+   }
+   .btn-secondary:hover { background: #e5e5ea; }
+   .btn-pdf {
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     gap: 6px;
+     width: 100%;
+     padding: 12px;
+     background: white;
+     color: #2792C3;
+     border: 1.5px solid #2792C3;
+     border-radius: 12px;
+     font-size: 14px;
+     font-weight: 600;
+     cursor: pointer;
+     transition: all 0.15s;
+     margin-bottom: 16px;
+   }
+  .btn-pdf:hover { background: rgba(230,126,34,0.06); }
+  .btn-add-participant {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 12px;
+    background: white;
+    color: #2792C3;
+    border: 1.5px dashed #2792C3;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 12px;
+  }
+  .btn-add-participant:hover { background: rgba(230,126,34,0.06); }
+
+  /* === Modal === */
+   .modal-overlay {
+     display: none;
+     position: fixed;
+     inset: 0;
+     background: rgba(0,0,0,0.4);
+     backdrop-filter: blur(4px);
+     -webkit-backdrop-filter: blur(4px);
+     z-index: 200;
+     align-items: flex-end;
+     justify-content: center;
+   }
+   .modal-overlay.open { display: flex; }
+   .modal-sheet {
+     background: white;
+     border-radius: 20px 20px 0 0;
+     width: 100%;
+     max-width: 500px;
+     max-height: 70vh;
+     padding: 20px;
+     animation: sheetUp 0.3s ease-out;
+     overflow-y: auto;
+   }
+   @keyframes sheetUp {
+     from { transform: translateY(100%); }
+     to   { transform: translateY(0); }
+   }
+   .modal-sheet-header {
+     display: flex;
+     justify-content: space-between;
+     align-items: center;
+     margin-bottom: 12px;
+     position: sticky;
+     top: 0;
+     background: white;
+     z-index: 2;
+     padding-bottom: 8px;
+   }
+   .modal-sheet-header h3 { font-size: 17px; font-weight: 600; }
+   .modal-sheet-header .close-btn {
+     background: none; border: none; font-size: 22px;
+     cursor: pointer; color: #7D7D7D; padding: 4px;
+   }
+   .modal-search {
+     margin-bottom: 10px;
+     position: sticky;
+     top: 40px;
+     background: white;
+     z-index: 2;
+     padding-bottom: 8px;
+   }
+   .modal-search input {
+     width: 100%;
+     padding: 8px 12px;
+     border: 1px solid #d2d2d7;
+     border-radius: 10px;
+     font-size: 14px;
+     outline: none;
+     background: #f9f9fb;
+   }
+   .modal-search input:focus { border-color: #2792C3; background: white; }
+   .modal-list-item {
+     display: flex;
+     align-items: center;
+     gap: 10px;
+     padding: 10px 0;
+     border-bottom: 1px solid #F5F2EC;
+     cursor: pointer;
+     transition: background 0.1s;
+   }
+   .modal-list-item:hover { background: #fafafa; margin: 0 -20px; padding: 10px 20px; }
+   .modal-list-item .avatar {
+     width: 32px; height: 32px; border-radius: 50%;
+     background: #2792C3; color: white;
+     font-size: 13px; font-weight: 600;
+     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+   }
+   .modal-list-item .info { flex: 1; }
+   .modal-list-item .info .name { font-size: 14px; font-weight: 500; }
+   .modal-list-item .info .tags { font-size: 11px; color: #7D7D7D; margin-top: 2px; }
+   .modal-list-item .add-icon { color: #2792C3; font-size: 18px; }
+   .modal-list-item .check-icon { color: #2792C3; font-size: 18px; }
+   .modal-no-result { text-align: center; color: #7D7D7D; padding: 30px 0; font-size: 14px; }
+
+   /* === FAB === */
+   .fab {
+     position: fixed;
+     bottom: 110px;
+     right: 24px;
+     width: 52px;
+     height: 52px;
+     border-radius: 50%;
+     background: #2792C3;
+     color: white;
+     border: none;
+     cursor: pointer;
+     box-shadow: 0 4px 16px rgba(230,126,34,0.35);
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     transition: transform 0.15s, box-shadow 0.15s;
+     z-index: 50;
+   }
+   .fab:hover {
+     transform: scale(1.05);
+     box-shadow: 0 6px 24px rgba(230,126,34,0.45);
+   }
+   .fab svg { width: 24px; height: 24px; }
+
+   /* === Bottom Tab Bar === */
+   .tab-bar {
+     position: fixed;
+     bottom: 0;
+     left: 0;
+     right: 0;
+     height: 54px;
+     padding-bottom: env(safe-area-inset-bottom, 0);
+     background: #F5F2EC;
+     backdrop-filter: blur(30px) saturate(1.4);
+     -webkit-backdrop-filter: blur(30px) saturate(1.4);
+     border-top: 1px solid rgba(60,60,67,0.08);
+     display: flex;
+     align-items: flex-start;
+     justify-content: space-around;
+     padding-top: 5px;
+     z-index: 100;
+   }
+   .tab-item {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     gap: 2px;
+     background: none;
+     border: none;
+     cursor: pointer;
+     padding: 0 12px;
+     min-width: 56px;
+     transition: all 0.15s;
+     position: relative;
+   }
+   .tab-item svg { width: 24px; height: 24px; color: #7D7D7D; transition: color 0.15s; }
+   .tab-item span { font-size: 10px; font-weight: 500; color: #7D7D7D; transition: color 0.15s; }
+   .tab-item.active svg, .tab-item.active span { color: #2792C3; }
+
+   ::-webkit-scrollbar { width: 4px; height: 4px; }
+   ::-webkit-scrollbar-track { background: transparent; }
+   ::-webkit-scrollbar-thumb { background: #d2d2d7; border-radius: 2px; }
+ </style>
+ </head>
+ <body>
+
+ <!-- ==================== VIEW: Game List ==================== -->
+ <div id="viewList" class="view active">
+   <div class="page-header">
+     <h1>球局 <span class="count-badge" id="countBadge"></span></h1>
+   </div>
+   <button class="btn-create" onclick="showCreateView()">＋ 新建球局</button>
+   <div class="list-wrap" id="listWrap"></div>
+ </div>
+
+ <!-- ==================== VIEW: Create Game ==================== -->
+ <div id="viewCreate" class="view">
+   <div class="page-header" style="justify-content:flex-start;gap:8px;">
+     <button class="btn-back" onclick="showListView()">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+     </button>
+     <h1 style="font-size:22px;">新建球局</h1>
+   </div>
+   <div class="form-wrap">
+     <div class="form-group">
+       <label>球局名称</label>
+       <input type="text" id="inputGameName" placeholder="例：周六下午场" autocomplete="off">
+     </div>
+     <div class="form-group">
+       <label>选择球场</label>
+       <select id="inputCourt"></select>
+       <div class="hint" id="courtEmptyHint" style="display:none;">暂无球场，请先在「球场」页面添加</div>
+     </div>
+     <div class="form-row">
+       <div class="form-group">
+         <label>开始时间</label>
+         <input type="datetime-local" id="inputStartTime">
+       </div>
+       <div class="form-group">
+         <label>持续时间（小时）</label>
+         <input type="number" id="inputDuration" placeholder="2" min="0.5" step="0.5" value="2">
+       </div>
+     </div>
+     <div class="form-group">
+       <label>参与人员</label>
+       <div class="participant-select-btn" id="participantSelectBtn" onclick="openParticipantPicker()">
+         <span id="participantBtnText">（可选）添加参与人员（创建后也可添加）</span>
+         <span class="count-badge-inline" id="participantCountBadge" style="display:none;">0</span>
+       </div>
+       <div class="selected-participants" id="selectedParticipants"></div>
+     </div>
+     <button class="btn-primary orange" onclick="handleCreateGame()" id="btnCreateSubmit">创建球局</button>
+   </div>
+ </div>
+
+ <!-- ==================== VIEW: Game Detail ==================== -->
+ <div id="viewDetail" class="view">
+   <div class="page-header" style="justify-content:flex-start;gap:8px;">
+     <button class="btn-back" onclick="showListView()">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+     </button>
+     <h1 style="font-size:22px;">球局详情</h1>
+   </div>
+   <div class="detail-wrap" id="detailWrap">
+     <!-- rendered by JS -->
+   </div>
+ </div>
+
+ <!-- ==================== MODAL: Participant Picker (Create) ==================== -->
+ <div class="modal-overlay" id="pickerModal">
+   <div class="modal-sheet" onclick="event.stopPropagation()">
+     <div class="modal-sheet-header">
+       <h3>选择参与人员</h3>
+       <button class="close-btn" onclick="closeParticipantPicker()">✕</button>
+     </div>
+     <div class="modal-search">
+       <input type="text" id="pickerSearch" placeholder="搜索姓名或昵称..." oninput="renderPickerList()" autocomplete="off">
+     </div>
+     <div id="pickerList"></div>
+   </div>
+ </div>
+
+ <!-- ==================== MODAL: Team Member Picker (Detail) ==================== -->
+ <div class="modal-overlay" id="teamPickerModal">
+   <div class="modal-sheet" onclick="event.stopPropagation()">
+     <div class="modal-sheet-header">
+       <h3>添加队员</h3>
+       <button class="close-btn" onclick="closeTeamPicker()">✕</button>
+     </div>
+     <div class="modal-search">
+       <input type="text" id="teamPickerSearch" placeholder="搜索姓名或昵称..." oninput="renderTeamPicker()" autocomplete="off">
+     </div>
+     <div id="teamPickerList"></div>
+  </div>
+</div>
+
+<!-- Modal: Add participants (from detail view) -->
+<div class="modal-overlay" id="addParticipantModal">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-sheet-header">
+      <h3>添加参与人</h3>
+      <button class="close-btn" onclick="closeAddParticipantModal()">✕</button>
+    </div>
+    <div class="modal-search">
+      <input type="text" id="addParticipantSearch" placeholder="搜索姓名或昵称..." oninput="renderAddParticipantModal()" autocomplete="off">
+    </div>
+    <div id="addParticipantList"></div>
+  </div>
+</div>
+
+<!-- Modal: Edit participants (reorder/delete) -->
+<div class="modal-overlay" id="editParticipantsModal">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-sheet-header">
+      <h3>编辑参与人</h3>
+      <button class="close-btn" onclick="closeEditParticipantsModal()">✕</button>
+    </div>
+    <div id="editParticipantsList"></div>
+  </div>
+</div>
+
+<!-- Bottom Tab Bar -->
+ <nav class="tab-bar">
+   <button class="tab-item" onclick="location.href='index.html'">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+       <path d="M3 12h1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8h1"/><path d="M12 2 2 12h3v8h6v-6h2v6h6v-8h3Z"/><path d="M15 10V6h-2v2"/>
+     </svg>
+     <span>首页</span>
+   </button>
+   <button class="tab-item" onclick="location.href='friends.html'">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+     </svg>
+     <span>朋友们</span>
+   </button>
+   <button class="tab-item" onclick="location.href='courts.html'">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+       <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
+     </svg>
+     <span>球场</span>
+   </button>
+   <button class="tab-item active" onclick="location.href='games.html'">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+       <rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4"/><path d="M14 12h4"/><path d="M10 10v4"/><path d="M18 14V8"/>
+     </svg>
+     <span>球局</span>
+   </button>
+ </nav>
+
+ <script>
+   // === Storage Keys ===
+   const STORAGE_GAMES = 'manager_games';
+   const STORAGE_FRIENDS = 'manager_friends';
+   const STORAGE_COURTS = 'manager_courts';
+
+   // === Data ===
+   let games = [];
+   let friends = [];
+   let courts = [];
+   let currentDetailId = null;
+   let pickerTargetTeamId = null;
+   // For create form
+   let selectedParticipantIds = [];
+
+   function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+   function loadData() {
+     try { games = JSON.parse(localStorage.getItem(STORAGE_GAMES)) || []; } catch { games = []; }
+     try { friends = JSON.parse(localStorage.getItem(STORAGE_FRIENDS)) || []; } catch { friends = []; }
+     try { courts = JSON.parse(localStorage.getItem(STORAGE_COURTS)) || []; } catch { courts = []; }
+   }
+   function saveGames() { localStorage.setItem(STORAGE_GAMES, JSON.stringify(games)); }
+
+   function getFriend(id) { return friends.find(f => f.id === id); }
+   function getCourt(id) { return courts.find(c => c.id === id); }
+   function friendDisplayName(f) { return f ? (f.nickname || f.name || '(未命名)') : '(已删除)'; }
+   function friendInitial(f) { return f ? (f.nickname || f.name || '?').charAt(0) : '?'; }
+  function renderShortTagStr(f) {
+    if (!f || !f.tags || !f.tags.length) return '';
+    const map = {'主攻':'主','副攻':'副','二传':'二','接应':'接','自由人':'自'};
+    return f.tags.map(t => map[t]||t).join('·');
+  }
+  function tagCount(id) {
+    const f = getFriend(id);
+    return f ? (f.tags||[]).length : 0;
+  }
+
+   // === View switching ===
+   function showView(id) {
+     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+     document.getElementById(id).classList.add('active');
+   }
+   function showListView() { showView('viewList'); renderList(); }
+   function showCreateView() {
+     loadData();
+     resetCreateForm();
+     showView('viewCreate');
+   }
+   function showDetailView(gameId) {
+     currentDetailId = gameId;
+     loadData();
+     renderDetail();
+     showView('viewDetail');
+   }
+
+   // ====================== LIST VIEW ======================
+   function renderList() {
+     document.getElementById('countBadge').textContent = `共 ${games.length} 场`;
+     const wrap = document.getElementById('listWrap');
+     if (games.length === 0) {
+       wrap.innerHTML = `<div class="empty-state"><div class="icon">🏐</div><p>还没有球局，点击上方创建吧</p></div>`;
+       return;
+     }
+     const sorted = [...games].sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+     wrap.innerHTML = sorted.map(g => {
+       const court = getCourt(g.courtId);
+       const participantCount = (g.participantIds || []).length;
+       const totalFee = court ? court.price * g.duration : 0;
+       const aa = participantCount > 0 ? Math.ceil(totalFee / participantCount) : 0;
+       const dateStr = formatDate(g.startTime);
+       return `<div class="game-card" onclick="showDetailView('${g.id}')">
+         <div class="game-card-top">
+           <div class="game-card-title">${escapeHtml(g.name)}</div>
+           <div class="game-card-date">${dateStr}</div>
+         </div>
+         <div class="game-card-meta">
+           <span>🏟 ${court ? escapeHtml(court.name) : '未选择'}</span>
+           <span>⏱ ${g.duration} 小时</span>
+           <span>👥 ${participantCount} 人</span>
+         </div>
+         <div class="game-card-aa">
+           AA 人均 <span class="aa-amount">${aa} 元</span>
+           ${totalFee > 0 ? `（总 ${totalFee} 元 ÷ ${participantCount} 人）` : ''}
+         </div>
+       </div>`;
+     }).join('');
+   }
+
+   function formatDate(iso) {
+     if (!iso) return '';
+     const d = new Date(iso);
+     const pad = n => String(n).padStart(2, '0');
+    return `${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+   }
+   function formatDateFull(iso) {
+     if (!iso) return '';
+     const d = new Date(iso);
+     const pad = n => String(n).padStart(2, '0');
+     return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+   }
+
+   function escapeHtml(s) {
+     if (!s) return '';
+     const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+   }
+
+   // ====================== CREATE VIEW ======================
+   function resetCreateForm() {
+     document.getElementById('inputGameName').value = '';
+     selectedParticipantIds = [];
+     document.getElementById('inputDuration').value = '2';
+     document.getElementById('inputStartTime').value = '';
+     renderCourtSelect();
+     updateParticipantUI();
+   }
+
+   function renderCourtSelect() {
+     const sel = document.getElementById('inputCourt');
+     const hint = document.getElementById('courtEmptyHint');
+     sel.innerHTML = '<option value="">-- 选择球场 --</option>';
+     if (courts.length === 0) {
+       hint.style.display = 'block';
+       sel.disabled = true;
+     } else {
+       hint.style.display = 'none';
+       sel.disabled = false;
+       courts.forEach(c => {
+         const opt = document.createElement('option');
+         opt.value = c.id;
+         opt.textContent = `${c.name}（${c.price} 元/时）`;
+         sel.appendChild(opt);
+       });
+     }
+   }
+
+   function updateParticipantUI() {
+     const btn = document.getElementById('participantBtnText');
+     const badge = document.getElementById('participantCountBadge');
+     const tags = document.getElementById('selectedParticipants');
+
+     if (selectedParticipantIds.length === 0) {
+       btn.textContent = '（可选）添加参与人员（创建后也可添加）';
+       badge.style.display = 'none';
+       tags.innerHTML = '';
+       return;
+     }
+     btn.textContent = `已选择 ${selectedParticipantIds.length} 人`;
+     badge.style.display = 'inline';
+     badge.textContent = selectedParticipantIds.length;
+     tags.innerHTML = selectedParticipantIds.map(id => {
+       const f = friends.find(x => x.id === id);
+       if (!f) return '';
+       return `<span class="selected-participant-tag">
+         ${escapeHtml(friendDisplayName(f))}
+         <span class="remove" onclick="removeSelectedParticipant('${id}');event.stopPropagation();">✕</span>
+       </span>`;
+     }).join('');
+   }
+
+   function removeSelectedParticipant(id) {
+     selectedParticipantIds = selectedParticipantIds.filter(x => x !== id);
+     updateParticipantUI();
+     renderPickerList();
+   }
+
+   // --- Participant picker modal (create) ---
+   function openParticipantPicker() {
+     document.getElementById('pickerModal').classList.add('open');
+     document.getElementById('pickerSearch').value = '';
+     renderPickerList();
+     setTimeout(() => document.getElementById('pickerSearch').focus(), 100);
+   }
+   function closeParticipantPicker() {
+     document.getElementById('pickerModal').classList.remove('open');
+   }
+   document.getElementById('pickerModal').addEventListener('click', closeParticipantPicker);
+
+   function renderPickerList() {
+     const q = document.getElementById('pickerSearch').value.trim().toLowerCase();
+     const filtered = q
+       ? friends.filter(f => (f.name || '').toLowerCase().includes(q) || (f.nickname || '').toLowerCase().includes(q))
+       : friends;
+     const list = document.getElementById('pickerList');
+     if (filtered.length === 0) {
+       list.innerHTML = `<div class="modal-no-result">${friends.length === 0 ? '还没有好友，请先在「朋友们」页面添加' : '没有匹配的好友'}</div>`;
+       return;
+     }
+     list.innerHTML = filtered.map(f => {
+       const selected = selectedParticipantIds.includes(f.id);
+       return `<div class="modal-list-item" onclick="toggleParticipant('${f.id}')">
+         <div class="avatar" style="background:${selected ? '#2792C3' : '#ddd'}">${friendInitial(f)}</div>
+         <div class="info">
+           <div class="name">${escapeHtml(friendDisplayName(f))}</div>
+           ${f.tags && f.tags.length ? `<div class="tags">${f.tags.join(' · ')}</div>` : ''}
+         </div>
+         <span class="check-icon">${selected ? '✓' : ''}</span>
+       </div>`;
+     }).join('');
+   }
+
+   function toggleParticipant(id) {
+     if (selectedParticipantIds.includes(id)) {
+       selectedParticipantIds = selectedParticipantIds.filter(x => x !== id);
+     } else {
+       selectedParticipantIds.push(id);
+     }
+     updateParticipantUI();
+     renderPickerList();
+   }
+
+   function handleCreateGame() {
+     const name = document.getElementById('inputGameName').value.trim();
+     const courtId = document.getElementById('inputCourt').value;
+     const startTime = document.getElementById('inputStartTime').value;
+     const duration = parseFloat(document.getElementById('inputDuration').value) || 0;
+
+     if (!name) { alert('请输入球局名称'); return; }
+     if (!courtId) { alert('请选择球场'); return; }
+     if (!startTime) { alert('请选择开始时间'); return; }
+     if (duration <= 0) { alert('请输入有效的持续时间'); return; }
+
+     const game = {
+       id: genId(),
+       name,
+       courtId,
+       startTime: new Date(startTime).toISOString(),
+       duration,
+       participantIds: [...selectedParticipantIds],
+       teams: [],
+       createdAt: new Date().toISOString(),
+       updatedAt: new Date().toISOString()
+     };
+     games.unshift(game);
+     saveGames();
+     showDetailView(game.id);
+   }
+
+   // ====================== DETAIL VIEW ======================
+   function renderDetail() {
+     const g = games.find(x => x.id === currentDetailId);
+     if (!g) { showListView(); return; }
+
+     const court = getCourt(g.courtId);
+     const participantCount = (g.participantIds || []).length;
+     const totalFee = court ? court.price * g.duration : 0;
+     const aa = participantCount > 0 ? Math.ceil(totalFee / participantCount) : 0;
+
+     // Calc assigned & unassigned
+     const allMemberIds = new Set();
+     (g.teams || []).forEach(t => (t.memberIds || []).forEach(mid => allMemberIds.add(mid)));
+     const unassignedIds = (g.participantIds || []).filter(id => !allMemberIds.has(id));
+    const teamColorsMap = ['#84C9EF','#B4D2ED','#CBBDDD','#DCB5D4','#E3B1D2'];
+    const participantToTeam = {};
+   const participantToTeamName = {};
+    const avatarColorMap = ['#3A7BBF','#5B6F9E','#7B5D87','#9A5A7B','#AB5B7C'];
+    const participantToAvatar = {};
+    (g.teams || []).forEach((t, i) => {
+      (t.memberIds || []).forEach(mid => { participantToAvatar[mid] = avatarColorMap[i % avatarColorMap.length]; });
+    });
+   (g.teams || []).forEach((t, i) => {
+      (t.memberIds || []).forEach(mid => { participantToTeam[mid] = teamColorsMap[i % teamColorsMap.length]; participantToTeamName[mid] = t.name; });
+    });
+
+     const wrap = document.getElementById('detailWrap');
+     wrap.innerHTML = `
+       <div class="detail-header">
+         <h2>${escapeHtml(g.name)}</h2>
+         <div class="detail-meta">
+           <div>📅 <strong>${formatDateFull(g.startTime)}</strong></div>
+           <div>🏟 球场：<strong>${court ? escapeHtml(court.name) + '（' + court.price + ' 元/时）' : '未选择'}</strong></div>
+           <div>⏱ 时长：<strong>${g.duration} 小时</strong></div>
+         </div>
+       </div>
+
+       <div class="aa-card">
+         <div>
+           <div class="label">AA 人均费用</div>
+           <div class="sub">总费用 ${totalFee} 元 ÷ ${participantCount} 人</div>
+         </div>
+         <div style="text-align:right;">
+           <div class="amount">${aa} 元</div>
+         </div>
+       </div>
+
+       <div style="margin-bottom:12px;">
+         <div class="section-title">
+           <span>👥 分队（${(g.teams||[]).length} 队）</span>
+         </div>
+         ${renderTeams(g, unassignedIds)}
+       </div>
+
+       <div class="participant-detail-list">
+         <div class="section-title" style="margin-bottom:6px;">
+          <span>所有参与人</span>
+          <button onclick="openEditParticipantsModal()" style="background:none;border:none;cursor:pointer;font-size:16px;color:#2792C3;padding:0 2px;vertical-align:middle;" title="编辑参与人">✎</button>
+           <span style="font-size:13px;color:#7D7D7D;font-weight:400;">共 ${participantCount} 人</span>
+         </div>
+         ${(g.participantIds||[]).map(id => {
+           const f = getFriend(id);
+          const inTeam = allMemberIds.has(id);
+          const teamC = participantToTeam[id] || null;
+         const teamName = participantToTeamName[id] || null;
+          const avatarBgColor = participantToAvatar[id] || null;
+         return `<div class="participant-item" style="${teamC ? 'background:'+teamC+'30;border-radius:8px;padding:6px 10px;margin:0 -10px;' : ''}">
+             <div class="avatar" style="background:${avatarBgColor || (inTeam ? '#2792C3' : '#ddd')};color:${avatarBgColor || inTeam ? 'white' : '#666'};">${friendInitial(f)}</div>
+            <span style="flex:1;">${escapeHtml(friendDisplayName(f))}</span>
+            ${teamName ? '<span style="font-size:10px;color:'+teamC+';margin-left:auto;font-weight:600;">'+teamName+'</span>' : ''}
+            ${!inTeam ? '<span style="font-size:11px;color:#7D7D7D;">未分配</span>' : ''}
+           </div>`;
+         }).join('')}
+      </div>
+
+      <button class="btn-add-participant" onclick="openAddParticipantModal('${g.id}')">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        添加参与人
+      <button class="btn-pdf" onclick="exportExcel('${g.id}')" style="margin-top:8px;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="18" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/>
+        </svg>
+        导出 Excel
+      </button>
+    `;
+     // Re-bind team events after render
+     bindTeamEvents(g);
+   }
+
+   function renderTeams(g, unassignedIds) {
+     const teams = g.teams || [];
+     if (teams.length === 0 && unassignedIds.length === 0) {
+       return `<div class="teams-empty">暂无队伍，请在下方创建</div>`;
+     }
+
+     let html = `<div class="teams-scroll">`;
+     // Existing teams
+     teams.forEach((t, i) => {
+       const colors = ['#84C9EF','#B4D2ED','#CBBDDD','#DCB5D4','#E3B1D2'];
+       const avatarColors = ['#3A7BBF','#5B6F9E','#7B5D87','#9A5A7B','#AB5B7C'];
+      const c = colors[i % colors.length];
+       const ac = avatarColors[i % avatarColors.length];
+      html += `<div class="team-card" style="background:${c}40;">
+         <div class="team-card-header">
+          <span class="team-name">${escapeHtml(t.name)}</span>
+           <span class="team-count">${(t.memberIds||[]).length} 人</span>
+           <button class="btn-del-team" onclick="deleteTeam('${g.id}','${t.id}')" title="删除队伍">✕</button>
+         </div>
+        ${(t.memberIds||[]).sort((a,b) => tagCount(a)-tagCount(b)).map(mid => {
+          const f = getFriend(mid);
+          return `<div class="team-member">
+             <div class="team-member-avatar" style="background:${ac};">${friendInitial(f)}</div>
+             <span class="team-member-name">${escapeHtml(friendDisplayName(f))}</span>
+            ${renderShortTagStr(f) ? `<span class="team-tags">${renderShortTagStr(f)}</span>` : ''}
+             <button class="btn-remove" onclick="removeTeamMember('${g.id}','${t.id}','${mid}')" title="移出">✕</button>
+           </div>`;
+         }).join('')}
+         ${unassignedIds.length > 0
+           ? `<button class="team-add-btn" onclick="openTeamPicker('${g.id}','${t.id}')">+</button>`
+           : ''}
+       </div>`;
+     });
+     // New team card
+     html += `<div class="new-team-card">
+       <input type="text" id="newTeamNameInput" placeholder="队伍名称" onkeydown="if(event.key==='Enter')createTeam('${g.id}')">
+       <button class="btn-create-team" onclick="createTeam('${g.id}')">创建队伍</button>
+     </div>`;
+     html += `</div>`;
+     return html;
+   }
+
+   function bindTeamEvents(g) {
+     // No persistent binding needed; inline onclick handlers handle everything.
+   }
+
+   // --- Team Actions ---
+   function createTeam(gameId) {
+     const input = document.getElementById('newTeamNameInput');
+     const name = input ? input.value.trim() : '';
+     if (!name) { alert('请输入队伍名称'); return; }
+     const g = games.find(x => x.id === gameId);
+     if (!g) return;
+     if (!g.teams) g.teams = [];
+     g.teams.push({ id: genId(), name, memberIds: [] });
+     g.updatedAt = new Date().toISOString();
+     saveGames();
+     renderDetail();
+   }
+
+   function deleteTeam(gameId, teamId) {
+     if (!confirm('确定删除该队伍？')) return;
+     const g = games.find(x => x.id === gameId);
+     if (!g) return;
+     g.teams = (g.teams || []).filter(t => t.id !== teamId);
+     g.updatedAt = new Date().toISOString();
+     saveGames();
+     renderDetail();
+   }
+
+   function removeTeamMember(gameId, teamId, memberId) {
+     if (!confirm('确定移出该队员？')) return;
+     const g = games.find(x => x.id === gameId);
+     if (!g) return;
+     const team = (g.teams || []).find(t => t.id === teamId);
+     if (!team) return;
+     team.memberIds = (team.memberIds || []).filter(m => m !== memberId);
+     g.updatedAt = new Date().toISOString();
+     saveGames();
+     renderDetail();
+   }
+
+   // --- Team Member Picker ---
+   function openTeamPicker(gameId, teamId) {
+     pickerTargetTeamId = { gameId, teamId };
+     document.getElementById('teamPickerModal').classList.add('open');
+     document.getElementById('teamPickerSearch').value = '';
+     renderTeamPicker();
+     setTimeout(() => document.getElementById('teamPickerSearch').focus(), 100);
+   }
+   function closeTeamPicker() {
+     document.getElementById('teamPickerModal').classList.remove('open');
+     pickerTargetTeamId = null;
+   }
+   document.getElementById('teamPickerModal').addEventListener('click', closeTeamPicker);
+
+   function renderTeamPicker() {
+     if (!pickerTargetTeamId) return;
+     const g = games.find(x => x.id === pickerTargetTeamId.gameId);
+     if (!g) return;
+     const allMemberIds = new Set();
+     (g.teams || []).forEach(t => (t.memberIds || []).forEach(mid => allMemberIds.add(mid)));
+     const unassignedIds = (g.participantIds || []).filter(id => !allMemberIds.has(id)).sort((a,b) => tagCount(a)-tagCount(b));
+
+     const q = document.getElementById('teamPickerSearch').value.trim().toLowerCase();
+     const filtered = q
+       ? unassignedIds.filter(id => {
+           const f = getFriend(id);
+           return f && ((f.name || '').toLowerCase().includes(q) || (f.nickname || '').toLowerCase().includes(q));
+         })
+       : unassignedIds;
+
+     const list = document.getElementById('teamPickerList');
+     if (filtered.length === 0) {
+       list.innerHTML = `<div class="modal-no-result">${unassignedIds.length === 0 ? '所有参与人已分配完毕' : '没有匹配的好友'}</div>`;
+       return;
+     }
+     list.innerHTML = filtered.map(id => {
+       const f = getFriend(id);
+       if (!f) return '';
+       return `<div class="modal-list-item" onclick="addToTeam('${pickerTargetTeamId.gameId}','${pickerTargetTeamId.teamId}','${id}')">
+         <div class="avatar">${friendInitial(f)}</div>
+         <div class="info">
+           <div class="name">${escapeHtml(friendDisplayName(f))}</div>
+           ${f.tags && f.tags.length ? `<div class="tags">${f.tags.join(' · ')}</div>` : ''}
+         </div>
+         <span class="add-icon">+</span>
+       </div>`;
+     }).join('');
+   }
+
+   function addToTeam(gameId, teamId, memberId) {
+     const g = games.find(x => x.id === gameId);
+     if (!g) return;
+     const team = (g.teams || []).find(t => t.id === teamId);
+     if (!team) return;
+     if (!team.memberIds) team.memberIds = [];
+     if (!team.memberIds.includes(memberId)) team.memberIds.push(memberId);
+     g.updatedAt = new Date().toISOString();
+     saveGames();
+     renderTeamPicker();
+     renderDetail();
+  }
+
+  // ====================== ADD PARTICIPANTS (DETAIL) ======================
+  function openAddParticipantModal() {
+    document.getElementById('addParticipantModal').classList.add('open');
+    document.getElementById('addParticipantSearch').value = '';
+    renderAddParticipantModal();
+    setTimeout(() => document.getElementById('addParticipantSearch').focus(), 100);
+  }
+  function closeAddParticipantModal() {
+    document.getElementById('addParticipantModal').classList.remove('open');
+  }
+  document.getElementById('addParticipantModal').addEventListener('click', closeAddParticipantModal);
+
+  function renderAddParticipantModal() {
+    const g = games.find(x => x.id === currentDetailId);
+    if (!g) return;
+    const existingIds = new Set(g.participantIds || []);
+    const available = friends.filter(f => !existingIds.has(f.id));
+    const q = document.getElementById('addParticipantSearch').value.trim().toLowerCase();
+    const filtered = q
+      ? available.filter(f => (f.name || '').toLowerCase().includes(q) || (f.nickname || '').toLowerCase().includes(q))
+      : available;
+    const list = document.getElementById('addParticipantList');
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="modal-no-result">${available.length === 0 ? '所有好友已在球局中' : '没有匹配的好友'}</div>`;
+      return;
+    }
+    list.innerHTML = filtered.map(f => `
+      <div class="modal-list-item" onclick="addGameParticipant('${g.id}','${f.id}')">
+        <div class="avatar">${friendInitial(f)}</div>
+        <div class="info">
+          <div class="name">${escapeHtml(friendDisplayName(f))}</div>
+          ${f.tags && f.tags.length ? `<div class="tags">${f.tags.join(' · ')}</div>` : ''}
+        </div>
+        <span class="add-icon">+</span>
+      </div>
+    `).join('');
+  }
+
+  function addGameParticipant(gameId, friendId) {
+    const g = games.find(x => x.id === gameId);
+    if (!g) return;
+    if (!g.participantIds) g.participantIds = [];
+    if (!g.participantIds.includes(friendId)) {
+      g.participantIds.push(friendId);
+      g.updatedAt = new Date().toISOString();
+      saveGames();
+      renderDetail();
+      renderAddParticipantModal();
+    }
+  }
+
+  // ====================== EDIT PARTICIPANTS ======================
+  function openEditParticipantsModal() {
+    document.getElementById('editParticipantsModal').classList.add('open');
+    renderEditParticipantsModal();
+  }
+  function closeEditParticipantsModal() {
+    document.getElementById('editParticipantsModal').classList.remove('open');
+  }
+  document.getElementById('editParticipantsModal').addEventListener('click', function(e) { if (e.target === this) closeEditParticipantsModal(); });
+
+  function renderEditParticipantsModal() {
+    const g = games.find(x => x.id === currentDetailId);
+    if (!g) return;
+    const list = document.getElementById('editParticipantsList');
+    if (!g.participantIds || g.participantIds.length === 0) {
+      list.innerHTML = '<div class="modal-no-result">暂无参与人</div>';
+      return;
+    }
+    const tc = ['#84C9EF','#B4D2ED','#CBBDDD','#DCB5D4','#E3B1D2'];
+    const pTeam = {};
+    (g.teams || []).forEach(function(t, i) { (t.memberIds || []).forEach(function(mid) { pTeam[mid] = tc[i % tc.length]; }); });
+    list.innerHTML = g.participantIds.map(function(id, idx) {
+      const f = getFriend(id);
+      const tc2 = pTeam[id] || '';
+      var arrows = '<div style="display:flex;flex-direction:column;gap:2px;">';
+      arrows += '<button onclick="moveParticipant('+idx+',-1)" style="background:none;border:none;cursor:pointer;font-size:10px;color:#999;line-height:1;" '+(idx===0?'disabled':'')+'>▲</button>';
+      arrows += '<button onclick="moveParticipant('+idx+',1)" style="background:none;border:none;cursor:pointer;font-size:10px;color:#999;line-height:1;" '+(idx===g.participantIds.length-1?'disabled':'')+'>▼</button>';
+      arrows += '</div>';
+      var bgStyle = tc2 ? 'background:'+tc2+'30;border-radius:8px;padding:8px 12px;margin:4px 0;' : '';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0f0f0;'+bgStyle+'">'+arrows+
+        '<div style="width:28px;height:28px;border-radius:50%;background:'+(tc2||'#ddd')+';color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;">'+friendInitial(f)+'</div>'+
+        '<div style="flex:1;font-size:14px;">'+escapeHtml(friendDisplayName(f))+'</div>'+
+        '<button onclick="removeParticipant('+idx+')" style="background:none;border:none;cursor:pointer;color:#FF4757;font-size:16px;" title="移除">✕</button>'+
+      '</div>';
+    }).join('');
+  }
+
+  function moveParticipant(idx, dir) {
+    const g = games.find(x => x.id === currentDetailId);
+    if (!g || !g.participantIds) return;
+    var newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= g.participantIds.length) return;
+    var tmp = g.participantIds[idx];
+    g.participantIds[idx] = g.participantIds[newIdx];
+    g.participantIds[newIdx] = tmp;
+    g.updatedAt = new Date().toISOString();
+    saveGames();
+    renderEditParticipantsModal();
+    renderDetail();
+  }
+
+  function removeParticipant(idx) {
+    if (!confirm('确定移除该参与人？')) return;
+    const g = games.find(x => x.id === currentDetailId);
+    if (!g || !g.participantIds) return;
+    var removedId = g.participantIds[idx];
+    g.participantIds.splice(idx, 1);
+    (g.teams || []).forEach(function(t) { t.memberIds = (t.memberIds || []).filter(function(mid) { return mid !== removedId; }); });
+    g.updatedAt = new Date().toISOString();
+    saveGames();
+    renderEditParticipantsModal();
+    renderDetail();
+  }
+
+  // ====================== EXCEL EXPORT ======================
+  function exportExcel(gameId) {
+    const g = games.find(x => x.id === gameId);
+    if (!g) return;
+    const court = getCourt(g.courtId);
+    var html = '<table border="1" cellpadding="5" cellspacing="0" style="font-family:sans-serif;">';
+    html += '<tr><td colspan="2" style="font-size:16px;font-weight:bold;">'+escapeHtml(g.name)+'</td></tr>';
+    html += '<tr><td>时间</td><td>'+formatDateFull(g.startTime)+'</td></tr>';
+    html += '<tr><td>球场</td><td>'+(court?escapeHtml(court.name):'')+'</td></tr>';
+    html += '<tr><td>时长</td><td>'+g.duration+' 小时</td></tr>';
+    html += '<tr><td>人数</td><td>'+(g.participantIds?g.participantIds.length:0)+' 人</td></tr>';
+    var fee = court ? court.price * g.duration : 0;
+    var aa = (g.participantIds&&g.participantIds.length>0) ? Math.ceil(fee / g.participantIds.length) : 0;
+    html += '<tr><td>总费用</td><td>'+fee+' 元</td></tr>';
+    html += '<tr><td>人均 AA</td><td>'+aa+' 元/人</td></tr>';
+    html += '</table>';
+    // Participant list - grouped by team
+    if (g.participantIds && g.participantIds.length > 0) {
+      var allMemberIds = new Set();
+      (g.teams || []).forEach(function(t) { (t.memberIds || []).forEach(function(mid) { allMemberIds.add(mid); }); });
+      html += '<table border="1" cellpadding="5" cellspacing="0" style="font-family:sans-serif;margin-top:10px;">';
+      html += '<tr><td style="font-weight:bold;">姓名</td><td style="font-weight:bold;">位置</td><td style="font-weight:bold;">队伍</td></tr>';
+      // Team members - grouped by team
+      (g.teams || []).forEach(function(t, tIdx) {
+        (t.memberIds || []).forEach(function(mid) {
+          var f = getFriend(mid);
+          var name = f ? friendDisplayName(f) : '(已删除)';
+          var tags = (f && f.tags && f.tags.length > 0) ? f.tags.join('/') : '';
+          var teamLabel = t.name || String(tIdx + 1);
+          html += '<tr><td>'+name+'</td><td>'+tags+'</td><td>'+teamLabel+'</td></tr>';
+        });
+      });
+      // Unassigned participants
+      (g.participantIds || []).forEach(function(id) {
+        if (!allMemberIds.has(id)) {
+          var f = getFriend(id);
+          var name = f ? friendDisplayName(f) : '(已删除)';
+          var tags = (f && f.tags && f.tags.length > 0) ? f.tags.join('/') : '';
+          html += '<tr><td>'+name+'</td><td>'+tags+'</td><td></td></tr>';
+        }
+      });
+      html += '</table>';
+    }
+    var blob = new Blob([html], {type: 'application/vnd.ms-excel'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = escapeHtml(g.name)+'.xls';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ====================== INIT ======================
+   loadData();
+   renderList();
+ </script>
+ </body>
+ </html>

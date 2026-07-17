@@ -1,0 +1,794 @@
+﻿ <!DOCTYPE html>
+ <html lang="zh-CN">
+ <head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+ <title>朋友们 - 组局者</title>
+ <style>
+   /* === Reset & Base === */
+   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+   body {
+     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roaoto, "PingFang SC", "Microsoft YaHei", sans-serif;
+     background: #F5F2EC;
+     color: #003366;
+     padding-bottom: 90px;
+     -webkit-font-smoothing: antialiased;
+   }
+   input, button, textarea, select { font-family: inherit; }
+
+   /* === Utility === */
+   .flex-center { display: flex; align-items: center; justify-content: center; }
+   .gap-8 { gap: 8px; }
+   .gap-12 { gap: 12px; }
+
+   /* === Page Header === */
+   .page-header {
+     padding: 20px 20px 12px;
+     display: flex;
+     align-items: center;
+     justify-content: space-between;
+     position: sticky;
+     top: 0;
+     background: #F5F2EC;
+     z-index: 10;
+   }
+   .page-header h1 {
+     font-size: 28px;
+     font-weight: 700;
+     letter-spacing: -0.5px;
+   }
+   .page-header .count-badge {
+     font-size: 14px;
+     font-weight: 400;
+     color: #7D7D7D;
+   }
+
+   /* === Search Bar === */
+   .search-wrap {
+     padding: 0 20px 12px;
+     position: sticky;
+     top: 60px;
+     background: #F5F2EC;
+     z-index: 9;
+   }
+   .search-bar {
+     display: flex;
+     align-items: center;
+     background: rgba(120,120,128,0.12);
+     border-radius: 10px;
+     padding: 0 12px;
+     height: 36px;
+     transition: background 0.2s;
+   }
+   .search-bar:focus-within {
+     background: rgba(120,120,128,0.16);
+   }
+   .search-bar svg {
+     width: 16px;
+     height: 16px;
+     color: #7D7D7D;
+     flex-shrink: 0;
+   }
+   .search-bar input {
+     border: none;
+     background: none;
+     outline: none;
+     font-size: 15px;
+     padding: 0 8px;
+     width: 100%;
+     color: #003366;
+   }
+   .search-bar input::placeholder { color: #7D7D7D; }
+
+   /* === Friend List === */
+   .list-wrap {
+     padding: 0 20px;
+     display: flex;
+     flex-direction: column;
+     gap: 10px;
+   }
+   .empty-state {
+     text-align: center;
+     padding: 60px 20px;
+     color: #7D7D7D;
+   }
+   .empty-state .icon {
+     font-size: 48px;
+     margin-bottom: 12px;
+     opacity: 0.5;
+   }
+   .empty-state p { font-size: 15px; }
+
+   /* === Friend Card === */
+   .friend-card {
+     background: rgba(255,255,255,0.8);
+     backdrop-filter: blur(10px);
+     -webkit-backdrop-filter: blur(10px);
+     border-radius: 14px;
+     padding: 14px 16px;
+     display: flex;
+     align-items: center;
+     gap: 14px;
+     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+     transition: transform 0.15s, box-shadow 0.15s;
+     cursor: default;
+   }
+   .friend-card:hover {
+     transform: translateY(-1px);
+     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+   }
+   .friend-avatar {
+     width: 44px;
+     height: 44px;
+     border-radius: 50%;
+     background: #005CAF;
+     color: white;
+     font-size: 18px;
+     font-weight: 600;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     flex-shrink: 0;
+   }
+   .friend-info {
+     flex: 1;
+     min-width: 0;
+   }
+   .friend-name-row {
+     display: flex;
+     align-items: baseline;
+     gap: 6px;
+     flex-wrap: wrap;
+   }
+   .friend-name-row .display-name {
+     font-size: 16px;
+     font-weight: 600;
+   }
+   .friend-name-row .sub-name {
+     font-size: 13px;
+     color: #7D7D7D;
+   }
+   .friend-tags {
+     display: flex;
+     gap: 5px;
+     flex-wrap: wrap;
+     margin-top: 5px;
+   }
+   .tag-chip {
+     font-size: 11px;
+     font-weight: 500;
+     padding: 2px 8px;
+     border-radius: 10px;
+     line-height: 1.5;
+   }
+   .tag-主攻   { background: #FDE8E8; color: #C47A8A; }
+   .tag-副攻   { background: #EEF5E8; color: #7A9C41; }
+   .tag-二传   { background: #E3F0FF; color: #2792C3; }
+   .tag-接应   { background: #FFF0E0; color: #C76A0A; }
+   .tag-自由人 { background: #F0EDF5; color: #8578A5; }
+
+   .friend-actions {
+     display: flex;
+     gap: 4px;
+     flex-shrink: 0;
+   }
+   .friend-actions button {
+     background: none;
+     border: none;
+     cursor: pointer;
+     width: 32px;
+     height: 32px;
+     border-radius: 8px;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     transition: background 0.15s;
+     color: #7D7D7D;
+   }
+   .friend-actions .btn-edit:hover { background: rgba(0,92,175,0.1); color: #005CAF; }
+   .friend-actions .btn-delete:hover { background: rgba(255,71,87,0.1); color: #FF4757; }
+   .friend-actions svg { width: 18px; height: 18px; }
+
+   /* === FAB === */
+   .fab {
+     position: fixed;
+     bottom: 110px;
+     right: 24px;
+     width: 52px;
+     height: 52px;
+     border-radius: 50%;
+     background: #005CAF;
+     color: white;
+     border: none;
+     cursor: pointer;
+     box-shadow: 0 4px 16px rgba(164,144,192,0.35);
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     transition: transform 0.15s, box-shadow 0.15s;
+     z-index: 50;
+   }
+   .fab:hover {
+     transform: scale(1.05);
+     box-shadow: 0 6px 24px rgba(74,108,247,0.45);
+   }
+   .fab svg { width: 24px; height: 24px; }
+
+   /* === Modal === */
+   .modal-overlay {
+     display: none;
+     position: fixed;
+     inset: 0;
+     background: rgba(0,0,0,0.4);
+     backdrop-filter: blur(4px);
+     -webkit-backdrop-filter: blur(4px);
+     z-index: 200;
+     align-items: center;
+     justify-content: center;
+     padding: 20px;
+   }
+   .modal-overlay.open { display: flex; }
+   .modal-sheet {
+     background: white;
+     border-radius: 20px;
+     width: 100%;
+     max-width: 420px;
+     max-height: 90vh;
+     overflow-y: auto;
+     padding: 24px;
+     box-shadow: 0 16px 48px rgba(0,0,0,0.15);
+     animation: modalUp 0.25s ease-out;
+   }
+   @keyframes modalUp {
+     from { opacity: 0; transform: translateY(20px) scale(0.97); }
+     to   { opacity: 1; transform: translateY(0) scale(1); }
+   }
+   .modal-sheet h2 {
+     font-size: 20px;
+     font-weight: 700;
+     margin-bottom: 20px;
+   }
+   .form-group {
+     margin-bottom: 16px;
+   }
+   .form-group label {
+     display: block;
+     font-size: 13px;
+     font-weight: 600;
+     color: #424245;
+     margin-bottom: 6px;
+   }
+   .form-group label .optional {
+     font-weight: 400;
+     color: #7D7D7D;
+   }
+   .form-group input[type="text"],
+   .form-group textarea {
+     width: 100%;
+     padding: 10px 12px;
+     border: 1px solid #d2d2d7;
+     border-radius: 10px;
+     font-size: 15px;
+     outline: none;
+     transition: border-color 0.15s, box-shadow 0.15s;
+     background: #f9f9fb;
+   }
+   .form-group input[type="text"]:focus,
+   .form-group textarea:focus {
+     border-color: #005CAF;
+     box-shadow: 0 0 0 3px rgba(74,108,247,0.15);
+     background: white;
+   }
+   .form-group textarea {
+     resize: vertical;
+     min-height: 60px;
+   }
+   .form-group .hint {
+     font-size: 11px;
+     color: #7D7D7D;
+     margin-top: 4px;
+   }
+
+   /* === Tag Selector === */
+   .tag-selector {
+     display: flex;
+     flex-wrap: wrap;
+     gap: 8px;
+   }
+   .tag-option {
+     display: inline-flex;
+     align-items: center;
+     gap: 4px;
+     padding: 6px 14px;
+     border-radius: 20px;
+     font-size: 13px;
+     font-weight: 500;
+     border: 1.5px solid #d2d2d7;
+     background: white;
+     cursor: pointer;
+     transition: all 0.15s;
+     user-select: none;
+     color: #424245;
+   }
+   .tag-option:hover { border-color: #005CAF; }
+   .tag-option.selected {
+     border-color: #005CAF;
+     background: rgba(74,108,247,0.08);
+     color: #005CAF;
+   }
+   .tag-option .dot {
+     width: 8px;
+     height: 8px;
+     border-radius: 50%;
+     display: inline-block;
+   }
+
+   /* === Form Actions === */
+   .form-actions {
+     display: flex;
+     gap: 10px;
+     margin-top: 20px;
+   }
+   .form-actions button {
+     flex: 1;
+     padding: 12px;
+     border-radius: 12px;
+     font-size: 15px;
+     font-weight: 600;
+     border: none;
+     cursor: pointer;
+     transition: all 0.15s;
+   }
+   .btn-primary {
+     background: #005CAF;
+     color: white;
+   }
+   .btn-primary:hover { background: #004D94; }
+   .btn-secondary {
+     background: #f0f0f2;
+     color: #424245;
+   }
+   .btn-secondary:hover { background: #e5e5ea; }
+   .btn-danger {
+     background: #FF4757;
+     color: white;
+   }
+   .btn-danger:hover { background: #C47A8A; }
+
+   /* === Bottom Tab Bar === */
+   .tab-bar {
+     position: fixed;
+     bottom: 0;
+     left: 0;
+     right: 0;
+     height: 54px;
+     padding-bottom: env(safe-area-inset-bottom, 0);
+     background: #F5F2EC;
+     backdrop-filter: blur(30px) saturate(1.4);
+     -webkit-backdrop-filter: blur(30px) saturate(1.4);
+     border-top: 1px solid rgba(60,60,67,0.08);
+     display: flex;
+     align-items: flex-start;
+     justify-content: space-around;
+     padding-top: 5px;
+     z-index: 100;
+   }
+   .tab-item {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     gap: 2px;
+     background: none;
+     border: none;
+     cursor: pointer;
+     padding: 0 12px;
+     min-width: 56px;
+     transition: all 0.15s;
+     position: relative;
+   }
+   .tab-item svg {
+     width: 24px;
+     height: 24px;
+     color: #7D7D7D;
+     transition: color 0.15s;
+   }
+   .tab-item span {
+     font-size: 10px;
+     font-weight: 500;
+     color: #7D7D7D;
+     transition: color 0.15s;
+   }
+   .tab-item.active svg,
+   .tab-item.active span {
+     color: #005CAF;
+   }
+
+   /* === Scrollbar === */
+   ::-webkit-scrollbar { width: 4px; }
+   ::-webkit-scrollbar-track { background: transparent; }
+   ::-webkit-scrollbar-thumb { background: #d2d2d7; border-radius: 2px; }
+ </style>
+ </head>
+ <body>
+
+ <!-- Header -->
+ <div class="page-header">
+   <h1>朋友们 <span class="count-badge" id="countBadge"></span></h1>
+ </div>
+
+ <!-- Search -->
+ <div class="search-wrap">
+   <div class="search-bar">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+       <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+     </svg>
+     <input type="text" id="searchInput" placeholder="搜索姓名或昵称..." autocomplete="off">
+   </div>
+ </div>
+
+ <!-- List -->
+ <div class="list-wrap" id="listWrap"></div>
+
+ <!-- FAB -->
+ <button class="fab" id="fabAdd" title="添加好友">
+   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+     <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+   </svg>
+ </button>
+
+ <!-- Modal -->
+ <div class="modal-overlay" id="modalOverlay">
+   <div class="modal-sheet" id="modalSheet">
+     <h2 id="modalTitle">添加好友</h2>
+
+     <div class="form-group">
+       <label>昵称 <span class="optional">（选填，与姓名至少填一项）</span></label>
+       <input type="text" id="inputNickname" placeholder="例：小明" autocomplete="off">
+     </div>
+
+     <div class="form-group">
+       <label>姓名 <span class="optional">（选填，与昵称至少填一项）</span></label>
+       <input type="text" id="inputName" placeholder="例：张三" autocomplete="off">
+     </div>
+
+     <div class="form-group">
+       <label>标签（可多选）</label>
+       <div class="tag-selector" id="tagSelector"></div>
+    </div>
+
+    <div class="form-group">
+      <label>性别 <span class="optional">（选填）</span></label>
+      <div class="tag-selector" id="genderSelector">
+        <span class="tag-option" data-gender="男">
+          <span class="dot" style="background:#51A8DD"></span>男
+        </span>
+        <span class="tag-option" data-gender="女">
+          <span class="dot" style="background:#CB4042"></span>女
+        </span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>备注</label>
+       <textarea id="inputNotes" placeholder="备注信息..."></textarea>
+     </div>
+
+     <div class="form-actions">
+       <button class="btn-secondary" id="btnCancel">取消</button>
+       <button class="btn-primary" id="btnSave">保存</button>
+     </div>
+   </div>
+ </div>
+
+ <!-- Confirm Dialog -->
+ <div class="modal-overlay" id="confirmOverlay">
+   <div class="modal-sheet" style="text-align:center;">
+     <p style="font-size:16px;margin-bottom:8px;font-weight:600;">确认删除</p>
+     <p style="font-size:14px;color:#7D7D7D;margin-bottom:20px;" id="confirmText">确定要删除这位好友吗？</p>
+     <div class="form-actions">
+       <button class="btn-secondary" id="confirmCancel">取消</button>
+       <button class="btn-danger" id="confirmOk">删除</button>
+     </div>
+   </div>
+ </div>
+
+ <!-- Bottom Tab Bar -->
+ <nav class="tab-bar">
+   <button class="tab-item" data-page="index" onclick="location.href='index.html'">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+       <path d="M3 12h1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8h1"/><path d="M12 2 2 12h3v8h6v-6h2v6h6v-8h3Z"/><path d="M15 10V6h-2v2"/>
+     </svg>
+     <span>首页</span>
+   </button>
+   <button class="tab-item active" data-page="friends" onclick="location.href='friends.html'">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+     </svg>
+     <span>朋友们</span>
+   </button>
+   <button class="tab-item" data-page="courts" onclick="location.href='courts.html'">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+       <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
+     </svg>
+     <span>球场</span>
+   </button>
+   <button class="tab-item" data-page="games" onclick="location.href='games.html'">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+       <rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4"/><path d="M14 12h4"/><path d="M10 10v4"/><path d="M18 14V8"/>
+     </svg>
+     <span>球局</span>
+   </button>
+ </nav>
+
+ <script>
+   // === Constants ===
+   const STORAGE_KEY = 'manager_friends';
+   const TAG_OPTIONS = ['主攻', '副攻', '二传', '接应', '自由人'];
+   const TAG_COLORS = {
+     '主攻':   '#C47A8A',
+     '副攻':   '#7A9C41',
+     '二传':   '#2792C3',
+     '接应':   '#C76A0A',
+     '自由人': '#8578A5'
+   };
+
+   // === State ===
+   let friends = [];
+   let editingId = null;
+   let deleteTargetId = null;
+
+   // === DOM refs ===
+   const listWrap = document.getElementById('listWrap');
+   const countBadge = document.getElementById('countBadge');
+   const searchInput = document.getElementById('searchInput');
+   const fabAdd = document.getElementById('fabAdd');
+   const modalOverlay = document.getElementById('modalOverlay');
+   const modalTitle = document.getElementById('modalTitle');
+   const inputNickname = document.getElementById('inputNickname');
+   const inputName = document.getElementById('inputName');
+   const tagSelector = document.getElementById('tagSelector');
+   const inputNotes = document.getElementById('inputNotes');
+   const btnCancel = document.getElementById('btnCancel');
+   const btnSave = document.getElementById('btnSave');
+   const confirmOverlay = document.getElementById('confirmOverlay');
+   const confirmText = document.getElementById('confirmText');
+   const confirmCancel = document.getElementById('confirmCancel');
+   const confirmOk = document.getElementById('confirmOk');
+
+   // === Data ===
+   function loadFriends() {
+     try {
+       const raw = localStorage.getItem(STORAGE_KEY);
+       friends = raw ? JSON.parse(raw) : [];
+     } catch { friends = []; }
+   }
+   function saveFriends() {
+     localStorage.setItem(STORAGE_KEY, JSON.stringify(friends));
+   }
+   function genId() {
+     return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+   }
+
+   // === Render ===
+   function render() {
+     const q = searchInput.value.trim().toLowerCase();
+     const filtered = q
+       ? friends.filter(f =>
+           (f.name || '').toLowerCase().includes(q) ||
+           (f.nickname || '').toLowerCase().includes(q)
+         )
+       : friends;
+
+     countBadge.textContent = `共 ${friends.length} 人`;
+
+     if (filtered.length === 0) {
+       listWrap.innerHTML = friends.length === 0
+         ? `<div class="empty-state"><div class="icon">🏐</div><p>还没有朋友，点右下角添加吧</p></div>`
+         : `<div class="empty-state"><div class="icon">🔍</div><p>没有匹配的好友</p></div>`;
+       return;
+     }
+
+     listWrap.innerHTML = filtered.map(f => `
+       <div class="friend-card" data-id="${f.id}">
+        <div class="friend-avatar" style="background:${avatarBg(f)}">${getInitial(f)}</div>
+         <div class="friend-info">
+           <div class="friend-name-row">
+             <span class="display-name">${displayName(f)}</span>
+             ${subName(f) ? `<span class="sub-name">${subName(f)}</span>` : ''}
+           </div>
+           ${f.tags && f.tags.length ? `
+           <div class="friend-tags">
+             ${f.tags.map(t => `<span class="tag-chip tag-${t}">${t}</span>`).join('')}
+           </div>` : ''}
+           ${f.notes ? `<div style="font-size:12px;color:#7D7D7D;margin-top:4px;">${escapeHtml(f.notes)}</div>` : ''}
+         </div>
+         <div class="friend-actions">
+           <button class="btn-edit" onclick="editFriend('${f.id}')" title="编辑">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+               <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+             </svg>
+           </button>
+           <button class="btn-delete" onclick="confirmDelete('${f.id}')" title="删除">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+               <path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+             </svg>
+           </button>
+         </div>
+       </div>
+     `).join('');
+   }
+
+   function getInitial(f) {
+    return (f.nickname || f.name || '?').charAt(0);
+  }
+  function avatarBg(f) {
+    if (f && f.gender === '女') return 'linear-gradient(135deg, #FF6B9D, #E84393)';
+    return '#51A8DD';
+  }
+  function displayName(f) {
+     return f.nickname || f.name || '(未命名)';
+   }
+   function subName(f) {
+     if (f.nickname && f.name) return `(${f.name})`;
+     if (!f.nickname && !f.name) return '';
+     return '';
+   }
+   function escapeHtml(s) {
+     const div = document.createElement('div');
+     div.textContent = s;
+     return div.innerHTML;
+   }
+
+   // === Tag selector ===
+   function renderTagSelector(selectedTags) {
+     tagSelector.innerHTML = TAG_OPTIONS.map(t => `
+       <span class="tag-option ${selectedTags.includes(t) ? 'selected' : ''}" data-tag="${t}">
+         <span class="dot" style="background:${TAG_COLORS[t]}"></span>
+         ${t}
+       </span>
+     `).join('');
+     tagSelector.querySelectorAll('.tag-option').forEach(el => {
+       el.addEventListener('click', () => {
+         el.classList.toggle('selected');
+       });
+     });
+   }
+   function getSelectedTags() {
+     return [...tagSelector.querySelectorAll('.tag-option.selected')].map(el => el.dataset.tag);
+   }
+
+   // === Modal ===
+   function openModal(id) {
+     editingId = id || null;
+     modalTitle.textContent = id ? '编辑好友' : '添加好友';
+
+     if (id) {
+       const f = friends.find(x => x.id === id);
+       if (f) {
+         inputNickname.value = f.nickname || '';
+         inputName.value = f.name || '';
+         renderTagSelector(f.tags || []);
+        inputNotes.value = f.notes || '';
+        // Clear and restore gender selection
+        document.querySelectorAll('#genderSelector .tag-option').forEach(el => el.classList.remove('selected'));
+        if (f.gender) {
+          const gEl = document.querySelector(`#genderSelector .tag-option[data-gender="${f.gender}"]`);
+          if (gEl) gEl.classList.add('selected');
+        }
+      }
+    } else {
+      inputNickname.value = '';
+      inputName.value = '';
+      renderTagSelector([]);
+      inputNotes.value = '';
+      // Clear gender selection
+      document.querySelectorAll('#genderSelector .tag-option').forEach(el => el.classList.remove('selected'));
+    }
+     modalOverlay.classList.add('open');
+     setTimeout(() => (inputNickname.value ? inputNickname : inputName).focus(), 100);
+   }
+   function closeModal() {
+     modalOverlay.classList.remove('open');
+     editingId = null;
+   }
+
+   function handleSave() {
+     const nickname = inputNickname.value.trim();
+     const name = inputName.value.trim();
+    const tags = getSelectedTags();
+    const notes = inputNotes.value.trim();
+    const gender = (document.querySelector('#genderSelector .tag-option.selected')?.dataset.gender) || '';
+
+    if (!nickname && !name) {
+       alert('昵称和姓名至少填写一项');
+       return;
+     }
+
+    if (editingId) {
+      const idx = friends.findIndex(x => x.id === editingId);
+      if (idx !== -1) {
+        friends[idx] = { ...friends[idx], nickname, name, gender, tags, notes, updatedAt: new Date().toISOString() };
+      }
+    } else {
+      friends.push({
+        id: genId(),
+        nickname,
+        name,
+        gender,
+        tags,
+        notes,
+         createdAt: new Date().toISOString(),
+         updatedAt: new Date().toISOString()
+       });
+     }
+
+     saveFriends();
+     render();
+     closeModal();
+   }
+
+   // === Actions ===
+   function editFriend(id) { openModal(id); }
+   function confirmDelete(id) {
+     deleteTargetId = id;
+     const f = friends.find(x => x.id === id);
+     confirmText.textContent = `确定要删除「${displayName(f)}」吗？`;
+     confirmOverlay.classList.add('open');
+   }
+
+   // === Events ===
+   fabAdd.addEventListener('click', () => openModal(null));
+   btnCancel.addEventListener('click', closeModal);
+   btnSave.addEventListener('click', handleSave);
+   modalOverlay.addEventListener('click', (e) => {
+     if (e.target === modalOverlay) closeModal();
+   });
+
+   confirmCancel.addEventListener('click', () => {
+     confirmOverlay.classList.remove('open');
+     deleteTargetId = null;
+   });
+   confirmOk.addEventListener('click', () => {
+     if (deleteTargetId) {
+       friends = friends.filter(x => x.id !== deleteTargetId);
+       saveFriends();
+       render();
+     }
+     confirmOverlay.classList.remove('open');
+     deleteTargetId = null;
+   });
+   confirmOverlay.addEventListener('click', (e) => {
+     if (e.target === confirmOverlay) {
+       confirmOverlay.classList.remove('open');
+       deleteTargetId = null;
+     }
+   });
+
+   searchInput.addEventListener('input', render);
+
+   // Keyboard shortcut
+   document.addEventListener('keydown', (e) => {
+     if (e.key === 'Escape') {
+       if (confirmOverlay.classList.contains('open')) {
+         confirmOverlay.classList.remove('open');
+         deleteTargetId = null;
+       } else if (modalOverlay.classList.contains('open')) {
+         closeModal();
+       }
+     }
+   });
+
+  // Gender selector: mutual exclusion
+  document.getElementById('genderSelector').addEventListener('click', (e) => {
+    const opt = e.target.closest('.tag-option');
+    if (!opt) return;
+    document.querySelectorAll('#genderSelector .tag-option').forEach(el => el.classList.remove('selected'));
+    opt.classList.add('selected');
+  });
+
+  // === Init ===
+  loadFriends();
+   render();
+ </script>
+ </body>
+ </html>
